@@ -142,10 +142,10 @@
                      description="Formulation of horizontal mixing"
                      possible_values="`2d_fixed' or `2d_smagorinsky'"/>
 
-                <nml_option name="config_len_disp" type="real" default_value="120000.0"
+                <nml_option name="config_len_disp" type="real" default_value="0.0" in_defaults="false"
                      units="m"
                      description="Horizontal length scale, used by the Smagorinsky formulation of horizontal diffusion and by 3-d divergence damping"
-                     possible_values="Positive real values"/>
+                     possible_values="Positive real values. A zero value implies that the length scale is prescribed by the nominalMinDc value in the input file."/>
 
                 <nml_option name="config_visc4_2dsmag" type="real" default_value="0.05"
                      units="-"
@@ -264,6 +264,11 @@
                      description="Coefficient for scaling the 2nd-order horizontal mixing in the mpas_cam absorbing layer"
                      possible_values="0 $\leq$ config_mpas_cam_coef $\leq$ 1, standard value is 0.2"/>
 
+                <nml_option name="config_number_cam_damping_levels" type="integer" default_value="4" in_defaults="false"
+                     units="-"
+                     description="Number of layers in which to apply cam 2nd-order horizontal filter top of model; viscosity linearly ramps to zero by layer number from the top"
+                     possible_values="Positive integer values"/>
+
                 <nml_option name="config_rayleigh_damp_u" type="logical" default_value="false" in_defaults="false"
                      units="-"
                      description="Whether to apply Rayleigh damping on horizontal velocity in the top-most model levels. The number of levels is specified by the config_number_rayleigh_damp_u_levels option, and the damping timescale is specified by the config_rayleigh_damp_u_timescale_days option."
@@ -276,7 +281,7 @@
 
                 <nml_option name="config_number_rayleigh_damp_u_levels" type="integer" default_value="6" in_defaults="false"
                      units="-"
-                     description="Number layers in which to apply Rayleigh damping on horizontal velocity at top of model; damping linearly ramps to zero by layer number from the top"
+                     description="Number of layers in which to apply Rayleigh damping on horizontal velocity at top of model; damping linearly ramps to zero by layer number from the top"
                      possible_values="Positive integer values"/>
         </nml_record>
 
@@ -373,6 +378,13 @@
                      possible_values=".true. or .false."/>
         </nml_record>
 
+        <nml_record name="development" in_defaults="false">
+                <nml_option name="config_halo_exch_method" type="character" default_value="mpas_halo"
+                     units="-"
+                     description="Method to use for exchanging halos"
+                     possible_values="`mpas_dmpar', `mpas_halo'"/>
+        </nml_record>
+
 <!-- **************************************************************************************** -->
 <!-- **************************************  Packages  ************************************** -->
 <!-- **************************************************************************************** -->
@@ -445,6 +457,7 @@
 			<var name="fEdge"/>
 			<var name="fVertex"/>
 			<var name="meshDensity"/>
+			<var name="nominalMinDc"/>
 			<var name="bdyMaskCell"/>
 			<var name="bdyMaskEdge"/>
 			<var name="bdyMaskVertex"/>
@@ -469,6 +482,10 @@
 			<var name="deriv_two"/>
 			<var name="defc_a"/>
 			<var name="defc_b"/>
+#ifdef MPAS_CAM_DYCORE
+			<var name="cell_gradient_coef_x"/>
+			<var name="cell_gradient_coef_y"/>
+#endif
 			<var name="coeffs_reconstruct"/>
 			<var_array name="scalars"/>
 			<var name="initial_time"/>
@@ -576,6 +593,7 @@
 			<var name="fEdge"/>
 			<var name="fVertex"/>
 			<var name="meshDensity"/>
+			<var name="nominalMinDc"/>
 			<var name="bdyMaskCell"/>
 			<var name="bdyMaskEdge"/>
 			<var name="bdyMaskVertex"/>
@@ -600,6 +618,10 @@
 			<var name="deriv_two"/>
 			<var name="defc_a"/>
 			<var name="defc_b"/>
+#ifdef MPAS_CAM_DYCORE
+			<var name="cell_gradient_coef_x"/>
+			<var name="cell_gradient_coef_y"/>
+#endif
 			<var name="coeffs_reconstruct"/>
 			<var_array name="scalars"/>
 			<var name="initial_time"/>
@@ -758,7 +780,6 @@
 			<var name="noahres"/>
 			<var name="potevp"/>
 			<var name="sfc_albedo"/>
-			<var name="sfc_albedo_seaice"/>
 			<var name="sfc_emiss"/>
 			<var name="sfc_emibck"/>
 			<var name="sfcrunoff"/>
@@ -1286,6 +1307,9 @@
                 <var name="meshDensity" type="real" dimensions="nCells" units="unitless"
                      description="Mesh density function (used when generating the mesh) evaluated at a cell"/>
 
+                <var name="nominalMinDc" type="real" dimensions="" units="m"
+                     description="Nominal minimum dcEdge value where meshDensity == 1.0"/>
+
                 <var name="meshScalingDel2" type="real" dimensions="nEdges" units="unitless"
                      description="Scaling coefficient for $\nabla^2$ eddy viscosity"/>
 
@@ -1393,6 +1417,14 @@
 
                 <var name="defc_b" type="real" dimensions="maxEdges nCells" units="unitless"
                      description="Coefficients for computing the diagonal components of the horizontal deformation"/>
+
+#ifdef MPAS_CAM_DYCORE
+                <var name="cell_gradient_coef_x" type="real" dimensions="maxEdges nCells" units="m^-1"
+                     description="Coefficients for computing the x (zonal) derivative of a cell-centered variable"/>
+
+                <var name="cell_gradient_coef_y" type="real" dimensions="maxEdges nCells" units="m^-1"
+                     description="Coefficients for computing the y (meridional) derivative of a cell-centered variable"/>
+#endif
 
                 <!-- Arrays required for reconstruction of velocity field -->
                 <var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
@@ -1612,6 +1644,9 @@
                 <var name="pv_cell" type="real" dimensions="nVertLevels nCells Time" units="s^{-1} kg^{-1} m^3"
                      description="absolute vorticity/rho_zz averaged to the cell center from the vertices"/>
 
+                <var name="dtheta_dt_mp" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
+                     description="Potential temperature heating rate from microphysics"/>
+
                 <!-- reconstructed horizontal velocity vectors at cell centers -->
                 <var name="uReconstructX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
                      description="Cartesian x-component of reconstructed horizontal velocity at cell centers"/>
@@ -1729,9 +1764,6 @@
 
                 <var name="kdiff" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-1}"
                      description="Smagorinsky horizontal eddy viscosity"/>
-
-                <var name="tend_rtheta_adv" type="real" dimensions="nVertLevels nCells Time" units="kg K m^{-3} s^{-1}"
-                     description="flux divergence for rho*theta_m/zz, used in the Tiedtke convective parameterization"/>
 
                 <var name="surface_pressure" type="real" dimensions="nCells Time" units="Pa"
                      description="Diagnosed surface pressure"/>
@@ -1871,6 +1903,12 @@
                         <var name="lbc_ni" name_in_code="ni" array_group="number" packages="bl_mynn_in;mp_thompson_in" units="m^{-3} s^{-1}"
                              description="Lateral boundary tendency of ice number concentration"/>
                 </var_array>
+        </var_struct>
+
+        <var_struct name="halo_scratch" time_levs="1">
+                <var name="scale" type="real" dimensions="nVertLevels TWO nCells" units="-"
+                     description="Scaling coefficients for monotonic-limited horizontal fluxes"
+                     persistence="scratch" />
         </var_struct>
 
 
@@ -2631,6 +2669,15 @@
                 <var name="acswuptc" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="accumulated clear-sky upward top-of-atmosphere shortwave radiation flux"/>
 
+                <var name="swddir" type="real" dimensions="nCells Time" units="W m^{-2}"
+                     description="shortwave surface downward direct irradiance"/>
+
+                <var name="swddni" type="real" dimensions="nCells Time" units="W m^{-2}"
+                     description="shortwave surface downward direct normal irradiance"/>
+
+                <var name="swddif" type="real" dimensions="nCells Time" units="W m^{-2}"
+                     description="shortwave surface downward diffuse irradiance"/>
+
                 <var name="gsw" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="net surface shortwave radiation flux"/>
 
@@ -2819,9 +2866,6 @@
 
                 <var name="sfc_albedo" type="real" dimensions="nCells Time" units="unitless"
                      description="surface albedo"/>
-
-                <var name="sfc_albedo_seaice" type="real" dimensions="nCells Time" units="unitless"
-                     description="surface albedo over seaice"/>
 
                 <var name="sfc_emiss" type="real" dimensions="nCells Time" units="unitless"
                      description="surface emissivity"/>

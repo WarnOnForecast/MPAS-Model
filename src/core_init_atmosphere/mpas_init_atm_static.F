@@ -167,6 +167,7 @@
  real (kind=RKIND), dimension(:), pointer :: latVertex, lonVertex
  real (kind=RKIND), dimension(:), pointer :: latEdge, lonEdge
  real (kind=RKIND), dimension(:), pointer :: fEdge, fVertex
+ real (kind=RKIND), pointer :: nominalMinDc
 
  integer (kind=I8KIND), dimension(:,:), pointer :: greenfrac_int
  real (kind=RKIND), dimension(:), pointer :: snoalb
@@ -280,6 +281,8 @@
  call mpas_pool_get_dimension(dims, 'nVertices', nVertices)
  call mpas_pool_get_dimension(dims, 'maxEdges', maxEdges)
 
+ call mpas_pool_get_array(mesh, 'nominalMinDc', nominalMinDc)
+
  xCell = xCell * sphere_radius
  yCell = yCell * sphere_radius
  zCell = zCell * sphere_radius
@@ -294,6 +297,8 @@
  areaCell = areaCell * sphere_radius**2.0
  areaTriangle = areaTriangle * sphere_radius**2.0
  kiteAreasOnVertex = kiteAreasOnVertex * sphere_radius**2.0
+
+ nominalMinDc = nominalMinDc * sphere_radius
 
 !
 ! Set max squared distance for k-d tree search to twice the squared cell diameter
@@ -586,6 +591,7 @@
             end do
 
             tile % is_processed = .true.
+            deallocate(tile % tile)
 
             if (.not. all_pixels_mapped_to_halo_cells) then
                 ierr = mgr % push_neighbors(tile)
@@ -820,6 +826,7 @@
             end do
 
             tile % is_processed = .true.
+            deallocate(tile % tile)
 
             if (.not. all_pixels_mapped_to_halo_cells) then
                 ierr = mgr % push_neighbors(tile)
@@ -1052,6 +1059,7 @@
             end do
 
             tile % is_processed = .true.
+            deallocate(tile % tile)
 
             if (.not. all_pixels_mapped_to_halo_cells) then
                 ierr = mgr % push_neighbors(tile)
@@ -1510,6 +1518,7 @@ else
             end do
 
             tile % is_processed = .true.
+            deallocate(tile % tile)
 
             !
             ! If at least one pixel maps to an owned cell (i.e. <= nCellsSolve) then

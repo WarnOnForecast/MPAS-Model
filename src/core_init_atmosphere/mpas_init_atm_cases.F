@@ -134,7 +134,7 @@ module init_atm_cases
             call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
 
             call mpas_log_write(' calling test case setup ')
-            call init_atm_case_squall_line(domain % dminfo, mesh, nCells, nVertLevels, state, diag, config_init_case)
+            call init_atm_case_squall_line(domain % dminfo, mesh, nCells, nVertLevels, state, diag, block_ptr % configs, config_init_case)
             call decouple_variables(mesh, nCells, nVertLevels, state, diag)
             call mpas_log_write(' returned from test case setup ')
             block_ptr => block_ptr % next
@@ -483,6 +483,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell, areaTriangle
       real (kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex
+      real (kind=RKIND), pointer :: nominalMinDc
 
       real (kind=RKIND), dimension(:), pointer :: latCell, latVertex, lonVertex, latEdge, lonEdge
       real (kind=RKIND), dimension(:), pointer :: fEdge, fVertex
@@ -493,11 +494,12 @@ module init_atm_cases
       integer, pointer :: config_theta_adv_order
       integer, pointer :: config_init_case
 
+      character (len=StrKIND), pointer :: config_interface_projection
 
       call mpas_pool_get_config(configs, 'config_init_case', config_init_case)
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', config_coef_3rd_order)
       call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
-
+      call mpas_pool_get_config(configs, 'config_interface_projection', config_interface_projection)
 
       !
       ! Scale all distances and areas from a unit sphere to one with radius sphere_radius
@@ -516,6 +518,7 @@ module init_atm_cases
       call mpas_pool_get_array(mesh, 'areaCell', areaCell)
       call mpas_pool_get_array(mesh, 'areaTriangle', areaTriangle)
       call mpas_pool_get_array(mesh, 'kiteAreasOnVertex', kiteAreasOnVertex)
+      call mpas_pool_get_array(mesh, 'nominalMinDc', nominalMinDc)
       call mpas_pool_get_config(mesh, 'on_a_sphere', on_a_sphere)
       call mpas_pool_get_config(mesh, 'sphere_radius', sphere_radius)
 
@@ -533,6 +536,7 @@ module init_atm_cases
       areaCell(:) = areaCell(:) * sphere_radius**2.0
       areaTriangle(:) = areaTriangle(:) * sphere_radius**2.0
       kiteAreasOnVertex(:,:) = kiteAreasOnVertex(:,:) * sphere_radius**2.0
+      nominalMinDc = nominalMinDc * sphere_radius
 
       call mpas_pool_get_array(mesh, 'weightsOnEdge', weightsOnEdge)
       call mpas_pool_get_array(mesh, 'nEdgesOnEdge', nEdgesOnEdge)
@@ -679,11 +683,24 @@ module init_atm_cases
       do k=2,nz1
          dzu (k)  = .5*(dzw(k)+dzw(k-1))
          rdzu(k)  =  1./dzu(k)
-         fzp (k)  = .5* dzw(k  )/dzu(k)
-         fzm (k)  = .5* dzw(k-1)/dzu(k)
          rdzwp(k) = dzw(k-1)/(dzw(k  )*(dzw(k)+dzw(k-1)))
          rdzwm(k) = dzw(k  )/(dzw(k-1)*(dzw(k)+dzw(k-1)))
       end do
+
+      call mpas_log_write(" interface_projection is " // trim(config_interface_projection))
+      if (trim(config_interface_projection) .eq. "linear_interpolation") then
+        do k=2,nz1
+           fzp (k)  = .5* dzw(k  )/dzu(k)
+           fzm (k)  = .5* dzw(k-1)/dzu(k)
+        end do
+      else if (trim(config_interface_projection) .eq. "layer_integral") then
+        do k=2,nz1
+           fzm (k)  = .5* dzw(k  )/dzu(k)
+           fzp (k)  = .5* dzw(k-1)/dzu(k)
+        end do
+      else
+        call mpas_log_write('only linear_interpolation or layer_integral are supported', messageType=MPAS_LOG_CRIT)
+      end if
 
 !**********  how are we storing cf1, cf2 and cf3?
 
@@ -1335,7 +1352,7 @@ module init_atm_cases
    end subroutine init_atm_recompute_geostrophic_wind
 
 
-   subroutine init_atm_case_squall_line(dminfo, mesh, nCells, nVertLevels, state, diag, test_case)
+   subroutine init_atm_case_squall_line(dminfo, mesh, nCells, nVertLevels, state, diag, configs, test_case)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Setup squall line and supercell test case
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1348,6 +1365,7 @@ module init_atm_cases
       integer, intent(in) :: nVertLevels
       type (mpas_pool_type), intent(inout) :: state
       type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(in) :: configs
       integer, intent(in) :: test_case
 
       real (kind=RKIND), dimension(:), pointer :: rdzw, dzu, rdzu, fzm, fzp
@@ -1388,11 +1406,14 @@ module init_atm_cases
       real (kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell, areaTriangle
       real (kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex
+      real (kind=RKIND), pointer :: nominalMinDc
       logical, pointer :: on_a_sphere
       real (kind=RKIND), pointer :: sphere_radius
 
       real (kind=RKIND), dimension(:,:), pointer :: t_init, w, rw, v, rho, theta
       real (kind=RKIND), dimension(:), pointer :: u_init, qv_init, angleEdge, fEdge, fVertex
+
+      character (len=StrKIND), pointer :: config_interface_projection
 
       call mpas_pool_get_array(mesh, 'xCell', xCell)
       call mpas_pool_get_array(mesh, 'yCell', yCell)
@@ -1408,9 +1429,11 @@ module init_atm_cases
       call mpas_pool_get_array(mesh, 'areaCell', areaCell)
       call mpas_pool_get_array(mesh, 'areaTriangle', areaTriangle)
       call mpas_pool_get_array(mesh, 'kiteAreasOnVertex', kiteAreasOnVertex)
+      call mpas_pool_get_array(mesh, 'nominalMinDc', nominalMinDc)
 
       call mpas_pool_get_config(mesh, 'on_a_sphere', on_a_sphere)
       call mpas_pool_get_config(mesh, 'sphere_radius', sphere_radius)
+      call mpas_pool_get_config(configs, 'config_interface_projection', config_interface_projection)
 
       !
       ! Scale all distances
@@ -1432,6 +1455,7 @@ module init_atm_cases
       areaCell(:) = areaCell(:) * a_scale**2.0
       areaTriangle(:) = areaTriangle(:) * a_scale**2.0
       kiteAreasOnVertex(:,:) = kiteAreasOnVertex(:,:) * a_scale**2.0
+      nominalMinDc = nominalMinDc * a_scale
 
       call mpas_pool_get_array(mesh, 'weightsOnEdge', weightsOnEdge)
       call mpas_pool_get_array(mesh, 'nEdgesOnEdge', nEdgesOnEdge)
@@ -1559,11 +1583,24 @@ module init_atm_cases
       do k=2,nz1
          dzu (k)  = .5*(dzw(k)+dzw(k-1))
          rdzu(k)  =  1./dzu(k)
-         fzp (k)  = .5* dzw(k  )/dzu(k)
-         fzm (k)  = .5* dzw(k-1)/dzu(k)
          rdzwp(k) = dzw(k-1)/(dzw(k  )*(dzw(k)+dzw(k-1)))
          rdzwm(k) = dzw(k  )/(dzw(k-1)*(dzw(k)+dzw(k-1)))
       end do
+
+      call mpas_log_write(" interface_projection is " // trim(config_interface_projection))
+      if (trim(config_interface_projection) .eq. "linear_interpolation") then
+        do k=2,nz1
+           fzp (k)  = .5* dzw(k  )/dzu(k)
+           fzm (k)  = .5* dzw(k-1)/dzu(k)
+        end do
+      else if (trim(config_interface_projection) .eq. "layer_integral") then
+        do k=2,nz1
+           fzm (k)  = .5* dzw(k  )/dzu(k)
+           fzp (k)  = .5* dzw(k-1)/dzu(k)
+        end do
+      else
+        call mpas_log_write('only linear_interpolation or layer_integral supported', messageType=MPAS_LOG_CRIT)
+      end if
 
 !**********  how are we storing cf1, cf2 and cf3?
 
@@ -1974,6 +2011,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell, areaTriangle
       real (kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex
+      real (kind=RKIND), pointer :: nominalMinDc
       logical, pointer :: on_a_sphere
       real (kind=RKIND), pointer :: sphere_radius
       real (kind=RKIND), pointer :: config_coef_3rd_order
@@ -1984,6 +2022,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(:,:), pointer :: t_init, w, rw, v, rho, theta
       real (kind=RKIND), dimension(:), pointer :: u_init, v_init, angleEdge, fEdge, fVertex
 
+      character (len=StrKIND), pointer :: config_interface_projection
 
       call mpas_pool_get_array(mesh, 'xCell', xCell)
       call mpas_pool_get_array(mesh, 'yCell', yCell)
@@ -1999,12 +2038,14 @@ module init_atm_cases
       call mpas_pool_get_array(mesh, 'areaCell', areaCell)
       call mpas_pool_get_array(mesh, 'areaTriangle', areaTriangle)
       call mpas_pool_get_array(mesh, 'kiteAreasOnVertex', kiteAreasOnVertex)
+      call mpas_pool_get_array(mesh, 'nominalMinDc', nominalMinDc)
 
       call mpas_pool_get_config(mesh, 'on_a_sphere', on_a_sphere)
       call mpas_pool_get_config(mesh, 'sphere_radius', sphere_radius)
 
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', config_coef_3rd_order)
       call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
+      call mpas_pool_get_config(configs, 'config_interface_projection', config_interface_projection)
 
       call mpas_pool_get_array(mesh, 'weightsOnEdge', weightsOnEdge)
       call mpas_pool_get_array(mesh, 'nEdgesOnEdge', nEdgesOnEdge)
@@ -2039,6 +2080,7 @@ module init_atm_cases
       areaCell(:) = areaCell(:) * a_scale**2.0
       areaTriangle(:) = areaTriangle(:) * a_scale**2.0
       kiteAreasOnVertex(:,:) = kiteAreasOnVertex(:,:) * a_scale**2.0
+      nominalMinDc = nominalMinDc * a_scale
 
 
       call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
@@ -2146,11 +2188,24 @@ module init_atm_cases
       do k=2,nz1
          dzu (k)  = .5*(dzw(k)+dzw(k-1))
          rdzu(k)  =  1./dzu(k)
-         fzp (k)  = .5* dzw(k  )/dzu(k)
-         fzm (k)  = .5* dzw(k-1)/dzu(k)
          rdzwp(k) = dzw(k-1)/(dzw(k  )*(dzw(k)+dzw(k-1)))
          rdzwm(k) = dzw(k  )/(dzw(k-1)*(dzw(k)+dzw(k-1)))
       end do
+
+      call mpas_log_write(" interface_projection is " // trim(config_interface_projection))
+      if (trim(config_interface_projection) .eq. "linear_interpolation") then
+        do k=2,nz1
+           fzp (k)  = .5* dzw(k  )/dzu(k)
+           fzm (k)  = .5* dzw(k-1)/dzu(k)
+        end do
+      else if (trim(config_interface_projection) .eq. "layer_integral") then
+        do k=2,nz1
+           fzm (k)  = .5* dzw(k  )/dzu(k)
+           fzp (k)  = .5* dzw(k-1)/dzu(k)
+        end do
+      else
+        call mpas_log_write('only linear_interpolation or layer_integral supported', messageType=MPAS_LOG_CRIT)
+      end if
 
 !**********  how are we storing cf1, cf2 and cf3?
 
@@ -2750,6 +2805,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(:), pointer :: t2m
 
       character (len=StrKIND) :: errstring
+      character (len=StrKIND), pointer :: config_interface_projection
 
       real (kind=RKIND) :: truelat1, truelat2, xlonc, cone
 
@@ -2771,7 +2827,8 @@ module init_atm_cases
       call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', config_coef_3rd_order)
       call mpas_pool_get_config(configs, 'config_blend_bdy_terrain', config_blend_bdy_terrain)
-
+      call mpas_pool_get_config(configs, 'config_interface_projection', config_interface_projection)
+      
       call mpas_pool_get_config(configs, 'config_extrap_airtemp', config_extrap_airtemp)
       if (trim(config_extrap_airtemp) == 'constant') then
          extrap_airtemp = 0
@@ -3141,11 +3198,24 @@ module init_atm_cases
       do k=2,nz1
          dzu (k)  = .5*(dzw(k)+dzw(k-1))
          rdzu(k)  =  1./dzu(k)
-         fzp (k)  = .5* dzw(k  )/dzu(k)
-         fzm (k)  = .5* dzw(k-1)/dzu(k)
          rdzwp(k) = dzw(k-1)/(dzw(k  )*(dzw(k)+dzw(k-1)))
          rdzwm(k) = dzw(k  )/(dzw(k-1)*(dzw(k)+dzw(k-1)))
       end do
+
+      call mpas_log_write(" interface_projection is " // trim(config_interface_projection))
+      if (trim(config_interface_projection) .eq. "linear_interpolation") then
+        do k=2,nz1
+           fzp (k)  = .5* dzw(k  )/dzu(k)
+           fzm (k)  = .5* dzw(k-1)/dzu(k)
+        end do
+      else if (trim(config_interface_projection) .eq. "layer_integral") then
+        do k=2,nz1
+           fzm (k)  = .5* dzw(k  )/dzu(k)
+           fzp (k)  = .5* dzw(k-1)/dzu(k)
+        end do
+      else
+        call mpas_log_write('only linear_interpolation or layer_integral supported', messageType=MPAS_LOG_CRIT)
+      end if
 
 !**********  how are we storing cf1, cf2 and cf3?
 
@@ -5030,9 +5100,6 @@ call mpas_log_write('Done with soil consistency check')
 
       if (allocated(maskslab)) deallocate(maskslab)
 
-      ! Freeze really cold ocean
-      where (sst < 271.0 .and. landmask == 0) xice = 1.0
-
       ! Limit XICE to values between 0 and 1. Although the input meteorological field is between 0.
       ! and 1., interpolation to the MPAS grid can yield values of XiCE less than 0. and greater
       ! than 1.:
@@ -6710,6 +6777,7 @@ call mpas_log_write('Done with soil consistency check')
       real(kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
       real(kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell, areaTriangle
       real(kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex
+      real(kind=RKIND), pointer :: nominalMinDc
 
       real(kind=RKIND), dimension(:), pointer :: fEdge, fVertex
       real(kind=RKIND), dimension(:), pointer :: latEdge
@@ -6796,6 +6864,7 @@ call mpas_log_write('Done with soil consistency check')
       call mpas_pool_get_array(mesh, 'areaCell', areaCell)
       call mpas_pool_get_array(mesh, 'areaTriangle', areaTriangle)
       call mpas_pool_get_array(mesh, 'kiteAreasOnVertex', kiteAreasOnVertex)
+      call mpas_pool_get_array(mesh, 'nominalMinDc', nominalMinDc)
       call mpas_pool_get_config(mesh, 'on_a_sphere', on_a_sphere)
       call mpas_pool_get_config(mesh, 'sphere_radius', sphere_radius)
 
@@ -6813,6 +6882,7 @@ call mpas_log_write('Done with soil consistency check')
       areaCell(:) = areaCell(:) * sphere_radius**2
       areaTriangle(:) = areaTriangle(:) * sphere_radius**2
       kiteAreasOnVertex(:,:) = kiteAreasOnVertex(:,:) * sphere_radius**2
+      nominalMinDc = nominalMinDc * sphere_radius
 
 
       !

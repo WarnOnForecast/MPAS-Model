@@ -29,6 +29,22 @@ module atm_time_integration
    
    use mpas_atm_iau  
 
+   !
+   ! Abstract interface for routine used to communicate halos of fields
+   ! in a named group
+   !
+   abstract interface
+      subroutine halo_exchange_routine(domain, halo_group, ierr)
+
+         use mpas_derived_types, only : domain_type
+
+         type (domain_type), intent(inout) :: domain
+         character(len=*), intent(in) :: halo_group
+         integer, intent(out), optional :: ierr
+
+      end subroutine halo_exchange_routine
+   end interface
+
    integer :: timerid, secs, u_secs
 
    ! Used to store physics tendencies for dynamics variables
@@ -48,7 +64,6 @@ module atm_time_integration
    ! Used in atm_advance_scalars_mono
    real (kind=RKIND), dimension(:,:), allocatable :: scalar_old_arr, scalar_new_arr
    real (kind=RKIND), dimension(:,:), allocatable :: s_max_arr, s_min_arr
-   real (kind=RKIND), dimension(:,:,:), allocatable :: scale_array
    real (kind=RKIND), dimension(:,:), allocatable :: flux_array
    real (kind=RKIND), dimension(:,:), allocatable :: flux_upwind_tmp_arr
    real (kind=RKIND), dimension(:,:), allocatable :: flux_tmp_arr
@@ -125,7 +140,6 @@ module atm_time_integration
       call mpas_allocate_scratch_field(tend_ru_physicsField)
 #endif
 
-
    end subroutine mpas_atm_dynamics_init
 
 
@@ -174,7 +188,7 @@ module atm_time_integration
    end subroutine mpas_atm_dynamics_finalize
 
 
-   subroutine atm_timestep(domain, dt, nowTime, itimestep)
+   subroutine atm_timestep(domain, dt, nowTime, itimestep, exchange_halo_group)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
    ! Advance model state forward in time by the specified time step
    !
@@ -190,6 +204,7 @@ module atm_time_integration
       real (kind=RKIND), intent(in) :: dt
       type (MPAS_Time_type), intent(in) :: nowTime
       integer, intent(in) :: itimestep
+      procedure (halo_exchange_routine) :: exchange_halo_group
 
 
       type (MPAS_Time_type) :: currTime
@@ -207,7 +222,7 @@ module atm_time_integration
       call mpas_pool_get_config(block % configs, 'config_apply_lbcs', config_apply_lbcs)
 
       if (trim(config_time_integration) == 'SRK3') then
-         call atm_srk3(domain, dt, itimestep)
+         call atm_srk3(domain, dt, itimestep, exchange_halo_group)
       else
          call mpas_log_write('Unknown time integration option '//trim(config_time_integration), messageType=MPAS_LOG_ERR)
          call mpas_log_write('Currently, only ''SRK3'' is supported.', messageType=MPAS_LOG_CRIT)
@@ -224,7 +239,7 @@ module atm_time_integration
    end subroutine atm_timestep
 
 
-   subroutine atm_srk3(domain, dt, itimestep)
+   subroutine atm_srk3(domain, dt, itimestep, exchange_halo_group)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
    ! Advance model state forward in time by the specified time step using 
    !   time-split RK3 scheme
@@ -243,6 +258,7 @@ module atm_time_integration
       type (domain_type), intent(inout) :: domain
       real (kind=RKIND), intent(in) :: dt
       integer, intent(in) :: itimestep
+      procedure (halo_exchange_routine) :: exchange_halo_group
 
       integer :: thread
       integer :: iCell, k, iEdge
@@ -290,26 +306,12 @@ module atm_time_integration
       type (mpas_pool_type), pointer :: tend_physics => null()
       type (mpas_pool_type), pointer :: lbc  ! regional_MPAS addition
 
-      type (field2DReal), pointer :: theta_m_field
-      type (field3DReal), pointer :: scalars_field
-      type (field2DReal), pointer :: pressure_p_field
-      type (field2DReal), pointer :: rtheta_p_field
-      type (field2DReal), pointer :: rtheta_pp_field
-      type (field2DReal), pointer :: tend_u_field
-      type (field2DReal), pointer :: u_field
-      type (field2DReal), pointer :: w_field
-      type (field2DReal), pointer :: rw_p_field
-      type (field2DReal), pointer :: ru_p_field
-      type (field2DReal), pointer :: rho_pp_field
-      type (field2DReal), pointer :: pv_edge_field
-      type (field2DReal), pointer :: rho_edge_field
-      type (field2DReal), pointer :: exner_field
-
       real (kind=RKIND), dimension(:,:), pointer :: w
       real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructZonal, uReconstructMeridional, uReconstructX, uReconstructY, uReconstructZ
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars, scalars_1, scalars_2
 
-      real (kind=RKIND), dimension(:,:), pointer :: rqvdynten
+      real (kind=RKIND), dimension(:,:), pointer :: rqvdynten, rthdynten, theta_m
+      real (kind=RKIND) :: theta_local, fac_m
 
 #ifndef MPAS_CAM_DYCORE
       ! Used in allocating scratch fields for physics tendencies
@@ -356,6 +358,7 @@ module atm_time_integration
       ! Note: nCellsSolve and nVerticesSolve are not currently used in this function
       !
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
       call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
       call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
@@ -396,14 +399,6 @@ module atm_time_integration
          call mpas_pool_get_dimension(state, 'index_nr', index_nr)
          call mpas_pool_get_dimension(state, 'index_ni', index_ni)
       endif
-
-      !
-      ! Retrieve fields
-      !
-      call mpas_pool_get_field(state, 'theta_m', theta_m_field, 1)
-      call mpas_pool_get_field(state, 'scalars', scalars_field, 1)
-      call mpas_pool_get_field(diag, 'pressure_p', pressure_p_field)
-      call mpas_pool_get_field(diag, 'rtheta_p', rtheta_p_field)
 
       !
       ! allocate storage for physics tendency save
@@ -475,19 +470,11 @@ module atm_time_integration
         number_sub_steps(3) = number_of_sub_steps
 
       end if
-        
-! theta_m
-      call mpas_dmpar_exch_halo_field(theta_m_field)
- 
-! scalars
-      call mpas_dmpar_exch_halo_field(scalars_field)
 
-! pressure_p
-      call mpas_dmpar_exch_halo_field(pressure_p_field)
-
-! rtheta_p
-      call mpas_dmpar_exch_halo_field(rtheta_p_field)
-
+      !
+      ! Communicate halos for theta_m, scalars, pressure_p, and rtheta_p
+      !
+      call exchange_halo_group(domain, 'dynamics:theta_m,scalars,pressure_p,rtheta_p')
 
       call mpas_timer_start('atm_rk_integration_setup')
 
@@ -525,18 +512,10 @@ module atm_time_integration
       call mpas_timer_start('physics_get_tend')
       rk_step = 1
       dynamics_substep = 1
-      call physics_get_tend( block, &
-                              mesh, &
-                             state, &     
-                              diag, &
-                              tend, &
-                      tend_physics, &
-                   block % configs, &
-                           rk_step, &
-                  dynamics_substep, &
-                   tend_ru_physics, &
-               tend_rtheta_physics, &
-                  tend_rho_physics )
+      call physics_get_tend( block, mesh, state, diag, tend, tend_physics, &
+                             block % configs, rk_step, dynamics_substep, &
+                             tend_ru_physics, tend_rtheta_physics, tend_rho_physics, &
+                             exchange_halo_group )
       call mpas_timer_stop('physics_get_tend')
 #else
 #ifndef MPAS_CAM_DYCORE
@@ -576,8 +555,7 @@ module atm_time_integration
 !$OMP END PARALLEL DO
          call mpas_timer_stop('atm_compute_vert_imp_coefs')
 
-         call mpas_pool_get_field(diag, 'exner', exner_field)
-         call mpas_dmpar_exch_halo_field(exner_field)
+         call exchange_halo_group(domain, 'dynamics:exner')
 
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
@@ -650,8 +628,7 @@ module atm_time_integration
             !***********************************
 
 ! tend_u
-            call mpas_pool_get_field(tend, 'u', tend_u_field)
-            call mpas_dmpar_exch_halo_field(tend_u_field, (/ 1 /))
+            call exchange_halo_group(domain, 'dynamics:tend_u')
    
             call mpas_timer_start('small_step_prep')
    
@@ -727,8 +704,8 @@ module atm_time_integration
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             do small_step = 1, number_sub_steps(rk_step)
-               call mpas_pool_get_field(diag, 'rho_pp', rho_pp_field)
-               call mpas_dmpar_exch_halo_field(rho_pp_field, (/ 1 /))
+
+               call exchange_halo_group(domain, 'dynamics:rho_pp')
 
                call mpas_timer_start('atm_advance_acoustic_step')
 
@@ -750,8 +727,8 @@ module atm_time_integration
   
 ! rtheta_pp
 ! This is the only communications needed during the acoustic steps because we solve for u on all edges of owned cells
-               call mpas_pool_get_field(diag, 'rtheta_pp', rtheta_pp_field)
-               call mpas_dmpar_exch_halo_field(rtheta_pp_field, (/ 1 /))
+
+               call exchange_halo_group(domain, 'dynamics:rtheta_pp')
 
 !  complete update of horizontal momentum by including 3d divergence damping at the end of the acoustic step
 
@@ -768,20 +745,10 @@ module atm_time_integration
 
             end do  ! end of acoustic steps loop
 
-            !CR: SMALLER STENCIL?: call mpas_dmpar_exch_halo_field(block % diag % rw_p, (/ 1 /))
-            call mpas_pool_get_field(diag, 'rw_p', rw_p_field)
-            call mpas_dmpar_exch_halo_field(rw_p_field)
-
-            !CR: SMALLER STENCIL?: call mpas_dmpar_exch_halo_field(block % diag % ru_p, (/ 2 /))
-            call mpas_pool_get_field(diag, 'ru_p', ru_p_field)
-            call mpas_dmpar_exch_halo_field(ru_p_field)
-
-            call mpas_pool_get_field(diag, 'rho_pp', rho_pp_field)
-            call mpas_dmpar_exch_halo_field(rho_pp_field)
-
-            ! the second layer of halo cells must be exchanged before calling atm_recover_large_step_variables
-            call mpas_pool_get_field(diag, 'rtheta_pp', rtheta_pp_field)
-            call mpas_dmpar_exch_halo_field(rtheta_pp_field, (/ 2 /))
+            !
+            ! Communicate halos for rw_p[1,2], ru_p[1,2], rho_pp[1,2], rtheta_pp[2]
+            !
+            call exchange_halo_group(domain, 'dynamics:rw_p,ru_p,rho_pp,rtheta_pp')
 
             call mpas_timer_start('atm_recover_large_step_variables')
 
@@ -841,9 +808,11 @@ module atm_time_integration
 !-------------------------------------------------------------------
             
             ! u
-            !CR: SMALLER STENCIL?: call mpas_dmpar_exch_halo_field(block % state % time_levs(2) % state % u, (/ 3 /))
-            call mpas_pool_get_field(state, 'u', u_field, 2)
-            call mpas_dmpar_exch_halo_field(u_field)
+            if (config_apply_lbcs) then
+               call exchange_halo_group(domain, 'dynamics:u_123')
+            else
+               call exchange_halo_group(domain, 'dynamics:u_3')
+            end if
 
             ! scalar advection: RK3 scheme of Skamarock and Gassmann (2011). 
             ! PD or monotonicity constraints applied only on the final Runge-Kutta substep.
@@ -851,13 +820,12 @@ module atm_time_integration
             if (config_scalar_advection .and. (.not. config_split_dynamics_transport) ) then
 
                call advance_scalars('scalars', domain, rk_step, rk_timestep, config_monotonic, config_positive_definite, &
-                                    config_time_integration_order, config_split_dynamics_transport)
+                                    config_time_integration_order, config_split_dynamics_transport, exchange_halo_group)
 
                if (config_apply_lbcs) then  ! adjust boundary tendencies for regional_MPAS scalar transport
 
-                  call mpas_pool_get_field(state, 'scalars', scalars_field, 2)  ! need to fill halo for horizontal filter
-                  call mpas_dmpar_exch_halo_field(scalars_field)
-   
+                  call exchange_halo_group(domain, 'dynamics:scalars')
+
                   allocate(scalars_driving(num_scalars,nVertLevels,nCells+1))
 
                   !  get the scalar values driving the regional boundary conditions
@@ -923,23 +891,16 @@ module atm_time_integration
 
             call mpas_timer_stop('atm_compute_solve_diagnostics')
 
-
-            ! w
-            call mpas_pool_get_field(state, 'w', w_field, 2)
-            call mpas_dmpar_exch_halo_field(w_field)
-
-            ! pv_edge
-            call mpas_pool_get_field(diag, 'pv_edge', pv_edge_field)
-            call mpas_dmpar_exch_halo_field(pv_edge_field)
-
-            ! rho_edge
-            call mpas_pool_get_field(diag, 'rho_edge', rho_edge_field)
-            call mpas_dmpar_exch_halo_field(rho_edge_field)
-
-            ! scalars
             if (config_scalar_advection .and. (.not. config_split_dynamics_transport) ) then
-               call mpas_pool_get_field(state, 'scalars', scalars_field, 2)
-               call mpas_dmpar_exch_halo_field(scalars_field)
+               !
+               ! Communicate halos for w[1,2], pv_edge[1,2], rho_edge[1,2], scalars[1,2]
+               !
+               call exchange_halo_group(domain, 'dynamics:w,pv_edge,rho_edge,scalars')
+            else
+               !
+               ! Communicate halos for w[1,2], pv_edge[1,2], rho_edge[1,2]
+               !
+               call exchange_halo_group(domain, 'dynamics:w,pv_edge,rho_edge')
             end if
 
             ! set the zero-gradient condition on w for regional_MPAS
@@ -954,18 +915,18 @@ module atm_time_integration
 !$OMP END PARALLEL DO
 
               ! w halo values needs resetting after regional boundary update
-              call mpas_pool_get_field(state, 'w', w_field, 2)
-              call mpas_dmpar_exch_halo_field(w_field)
+              call exchange_halo_group(domain, 'dynamics:w')
+
             end if ! end of regional_MPAS addition 
 
          end do RK3_DYNAMICS
 
          if (dynamics_substep < dynamics_split) then
-            call mpas_pool_get_field(state, 'theta_m', theta_m_field, 2)
 
-            call mpas_dmpar_exch_halo_field(theta_m_field)
-            call mpas_dmpar_exch_halo_field(pressure_p_field)
-            call mpas_dmpar_exch_halo_field(rtheta_p_field)
+            !
+            ! Communicate halos for theta_m[1,2], pressure_p[1,2], and rtheta_p[1,2]
+            !
+            call exchange_halo_group(domain, 'dynamics:theta_m,pressure_p,rtheta_p')
 
             !
             ! Note: A halo exchange for 'exner' here as well as after the call
@@ -1025,12 +986,12 @@ module atm_time_integration
 
 
             call advance_scalars('scalars', domain, rk_step, rk_timestep, config_monotonic, config_positive_definite, &
-                                 config_time_integration_order, config_split_dynamics_transport)
+                                 config_time_integration_order, config_split_dynamics_transport, exchange_halo_group)
 
             if (config_apply_lbcs) then  ! adjust boundary tendencies for regional_MPAS scalar transport
 
-               call mpas_pool_get_field(state, 'scalars', scalars_field, 2)  ! need to fill halo for horizontal filter
-               call mpas_dmpar_exch_halo_field(scalars_field)
+               ! need to fill halo for horizontal filter
+               call exchange_halo_group(domain, 'dynamics:scalars')
    
                allocate(scalars_driving(num_scalars,nVertLevels,nCells+1))
 
@@ -1077,8 +1038,7 @@ module atm_time_integration
 !------------------------------------------------------------------------------------------------------------------------
 
             if (rk_step < 3) then
-               call mpas_pool_get_field(state, 'scalars', scalars_field, 2)
-               call mpas_dmpar_exch_halo_field(scalars_field)
+               call exchange_halo_group(domain, 'dynamics:scalars')
             end if
 
          end do RK3_SPLIT_TRANSPORT
@@ -1113,11 +1073,15 @@ module atm_time_integration
       call mpas_pool_get_array(state, 'scalars', scalars_1, 1)
       call mpas_pool_get_array(state, 'scalars', scalars_2, 2)
 
-      if(config_convection_scheme == 'cu_grell_freitas'          .or. &
-         config_convection_scheme == 'cu_tiedtke'                .or. &
+      if(config_convection_scheme == 'cu_grell_freitas' .or. &
          config_convection_scheme == 'cu_ntiedtke') then
 
          call mpas_pool_get_array(tend_physics, 'rqvdynten', rqvdynten)
+         call mpas_pool_get_array(state, 'theta_m', theta_m, 2)
+
+         if (associated(tend_physics)) then
+            call mpas_pool_get_array(tend_physics, 'rthdynten', rthdynten)
+         end if
 
          !NOTE: The calculation of the tendency due to horizontal and vertical advection for the water vapor mixing ratio
          !requires that the subroutine atm_advance_scalars_mono was called on the third Runge Kutta step, so that a halo
@@ -1127,6 +1091,15 @@ module atm_time_integration
          else
             rqvdynten(:,:) = 0._RKIND
          end if
+
+         do k = 1, nVertLevels
+            do iCell = 1, nCellsSolve
+               fac_m = 1._RKIND/(1._RKIND + rv/rgas*scalars_2(index_qv,k,iCell))
+               theta_local = theta_m(k,iCell)*fac_m
+               rthdynten(k,iCell) = fac_m*(rthdynten(k,iCell)-theta_local*rv/rgas*rqvdynten(k,iCell))
+            end do
+         end do
+
       end if
 
       !simply set to zero negative mixing ratios of different water species (for now):
@@ -1180,9 +1153,8 @@ module atm_time_integration
 
       if (config_apply_lbcs) then  ! adjust boundary values for regional_MPAS scalar transport
 
-         call mpas_pool_get_field(state, 'scalars', scalars_field, 2)  ! need to fill halo for horizontal filter
-         call mpas_dmpar_exch_halo_field(scalars_field)
-   
+         call exchange_halo_group(domain, 'dynamics:scalars')
+
          allocate(scalars_driving(num_scalars,nVertLevels,nCells+1))
 
          !  get the scalar values driving the regional boundary conditions
@@ -1256,7 +1228,7 @@ module atm_time_integration
    !
    !-----------------------------------------------------------------------
    subroutine advance_scalars(field_name, domain, rk_step, rk_timestep, config_monotonic, config_positive_definite, &
-                              config_time_integration_order, config_split_dynamics_transport)
+                              config_time_integration_order, config_split_dynamics_transport, exchange_halo_group)
 
       implicit none
 
@@ -1269,6 +1241,7 @@ module atm_time_integration
       logical, intent(in) :: config_positive_definite
       integer, intent(in) :: config_time_integration_order
       logical, intent(in) :: config_split_dynamics_transport
+      procedure (halo_exchange_routine) :: exchange_halo_group
 
       ! Local variables
       integer :: thread
@@ -1277,6 +1250,7 @@ module atm_time_integration
       type (mpas_pool_type), pointer :: state
       type (mpas_pool_type), pointer :: diag
       type (mpas_pool_type), pointer :: mesh
+      type (mpas_pool_type), pointer :: halo_scratch
 
       integer, pointer :: nCells
       integer, pointer :: nEdges
@@ -1302,6 +1276,7 @@ module atm_time_integration
       call mpas_pool_get_subpool(block % structs, 'state', state)
       call mpas_pool_get_subpool(block % structs, 'diag', diag)
       call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+      call mpas_pool_get_subpool(block % structs, 'halo_scratch', halo_scratch)
 
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
       call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
@@ -1326,8 +1301,6 @@ module atm_time_integration
       s_max_arr(:,nCells+1) = 0.0_RKIND
       allocate(s_min_arr(nVertLevels,nCells+1))
       s_min_arr(:,nCells+1) = 0.0_RKIND
-      allocate(scale_array(nVertLevels,2,nCells+1))
-      scale_array(:,:,nCells+1) = 0.0_RKIND
       allocate(flux_array(nVertLevels,nEdges+1))
       flux_array(:,nEdges+1) = 0.0_RKIND
       allocate(wdtn_arr(nVertLevels+1,nCells+1))
@@ -1362,12 +1335,14 @@ module atm_time_integration
                                      horiz_flux_array, rk_step, config_time_integration_order, &
                                      advance_density=config_split_dynamics_transport)
          else
-            call atm_advance_scalars_mono(field_name, block, tend, state, diag, mesh, block % configs, rk_timestep(rk_step), &
+            call atm_advance_scalars_mono(field_name, block, tend, state, diag, mesh, halo_scratch, &
+                                          block % configs, rk_timestep(rk_step), &
                                           cellThreadStart(thread), cellThreadEnd(thread), &
                                           edgeThreadStart(thread), edgeThreadEnd(thread), &
                                           cellSolveThreadStart(thread), cellSolveThreadEnd(thread), &
                                           scalar_old_arr, scalar_new_arr, s_max_arr, s_min_arr, wdtn_arr, &
-                                          scale_array, flux_array, flux_upwind_tmp_arr, flux_tmp_arr, &
+                                          flux_array, flux_upwind_tmp_arr, flux_tmp_arr, &
+                                          exchange_halo_group, &
                                           advance_density=config_split_dynamics_transport, rho_zz_int=rho_zz_int)
          end if
       end do
@@ -1377,10 +1352,10 @@ module atm_time_integration
       deallocate(scalar_new_arr)
       deallocate(s_max_arr)
       deallocate(s_min_arr)
-      deallocate(scale_array)
       deallocate(flux_array)
       deallocate(wdtn_arr)
       deallocate(rho_zz_int)
+
       if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
          deallocate(horiz_flux_array)
       else
@@ -3093,11 +3068,11 @@ module atm_time_integration
    !>  to the work routine.
    !
    !-----------------------------------------------------------------------
-   subroutine atm_advance_scalars_mono(field_name, block, tend, state, diag, mesh, configs, dt, &
+   subroutine atm_advance_scalars_mono(field_name, block, tend, state, diag, mesh, halo_scratch, configs, dt, &
                                        cellStart, cellEnd, edgeStart, edgeEnd, &
                                        cellSolveStart, cellSolveEnd, &
-                                       scalar_old, scalar_new, s_max, s_min, wdtn, scale_arr, flux_arr, &
-                                       flux_upwind_tmp, flux_tmp, advance_density, rho_zz_int)
+                                       scalar_old, scalar_new, s_max, s_min, wdtn, flux_arr, &
+                                       flux_upwind_tmp, flux_tmp, exchange_halo_group, advance_density, rho_zz_int)
 
       implicit none
 
@@ -3108,6 +3083,7 @@ module atm_time_integration
       type (mpas_pool_type), intent(inout) :: state
       type (mpas_pool_type), intent(in)    :: diag
       type (mpas_pool_type), intent(in)    :: mesh
+      type (mpas_pool_type), intent(in)    :: halo_scratch
       type (mpas_pool_type), intent(in)    :: configs
       real (kind=RKIND), intent(in)        :: dt
       integer, intent(in) :: cellStart, cellEnd, edgeStart, edgeEnd
@@ -3115,9 +3091,9 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), intent(inout) :: scalar_old, scalar_new
       real (kind=RKIND), dimension(:,:), intent(inout) :: s_max, s_min
       real (kind=RKIND), dimension(:,:), intent(inout) :: wdtn
-      real (kind=RKIND), dimension(:,:,:), intent(inout) :: scale_arr
       real (kind=RKIND), dimension(:,:), intent(inout) :: flux_arr
       real (kind=RKIND), dimension(:,:), intent(inout) :: flux_upwind_tmp, flux_tmp
+      procedure (halo_exchange_routine) :: exchange_halo_group
       logical, intent(in), optional :: advance_density
       real (kind=RKIND), dimension(:,:), intent(inout), optional :: rho_zz_int
 
@@ -3143,6 +3119,9 @@ module atm_time_integration
       real (kind=RKIND), dimension(:), pointer :: fnm, fnp, rdnw
       integer, dimension(:), pointer :: nEdgesOnCell
       real (kind=RKIND), pointer :: coef_3rd_order
+
+      type (field3DReal), pointer :: scale
+      real (kind=RKIND), dimension(:,:,:), pointer :: scale_arr
 
 
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
@@ -3180,6 +3159,10 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)  ! MPAS_regional addition
       call mpas_pool_get_array(mesh, 'bdyMaskEdge', bdyMaskEdge)  ! MPAS_regional addition
 
+      call mpas_pool_get_field(halo_scratch, 'scale', scale)
+      call mpas_allocate_scratch_field(scale)
+      call mpas_pool_get_array(halo_scratch, 'scale', scale_arr)
+
       call atm_advance_scalars_mono_work(block, state, nCells, nEdges, num_scalars, dt, &
                                    cellStart, cellEnd, edgeStart, edgeEnd, &
                                    cellSolveStart, cellSolveEnd, &
@@ -3189,7 +3172,9 @@ module atm_time_integration
                                    advCellsForEdge, adv_coefs, adv_coefs_3rd, scalar_old, scalar_new, s_max, s_min, &
                                    wdtn, scale_arr, flux_arr, flux_upwind_tmp, flux_tmp, &
                                    bdyMaskCell, bdyMaskEdge, &
-                                   advance_density, rho_zz_int)
+                                   exchange_halo_group, advance_density, rho_zz_int)
+
+      call mpas_deallocate_scratch_field(scale)
 
    end subroutine atm_advance_scalars_mono
 
@@ -3235,7 +3220,7 @@ module atm_time_integration
                                    advCellsForEdge, adv_coefs, adv_coefs_3rd, scalar_old, scalar_new, s_max, s_min, &
                                    wdtn, scale_arr, flux_arr, flux_upwind_tmp, flux_tmp, &
                                    bdyMaskCell, bdyMaskEdge, &
-                                   advance_density, rho_zz_int)
+                                   exchange_halo_group, advance_density, rho_zz_int)
 
       use mpas_atm_dimensions, only : nVertLevels
 
@@ -3249,6 +3234,7 @@ module atm_time_integration
       real (kind=RKIND), intent(in)        :: dt
       integer, intent(in) :: cellStart, cellEnd, edgeStart, edgeEnd
       integer, intent(in) :: cellSolveStart, cellSolveEnd
+      procedure (halo_exchange_routine) :: exchange_halo_group
       logical, intent(in), optional :: advance_density
       real (kind=RKIND), dimension(nVertLevels,nCells+1), intent(inout), optional :: rho_zz_int
 
@@ -3275,14 +3261,10 @@ module atm_time_integration
       real (kind=RKIND), dimension(nVertLevels,nCells+1), intent(inout) :: scalar_old, scalar_new
       real (kind=RKIND), dimension(nVertLevels,nCells+1), intent(inout) :: s_max, s_min
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1), intent(inout) :: wdtn
-      real (kind=RKIND), dimension(nVertLevels,2,nCells+1), intent(inout), target :: scale_arr
+      real (kind=RKIND), dimension(nVertLevels,2,nCells+1), intent(inout) :: scale_arr
       real (kind=RKIND), dimension(nVertLevels,nEdges+1), intent(inout) :: flux_arr
       real (kind=RKIND), dimension(nVertLevels,nEdges+1), intent(inout) :: flux_upwind_tmp, flux_tmp
       type (field3DReal), pointer :: scalars_old_field
-
-      type (field3DReal), pointer :: tempField
-      type (field3DReal), target :: tempFieldTarget
-
 
       integer, parameter :: SCALE_IN = 1, SCALE_OUT = 2
 
@@ -3348,7 +3330,7 @@ module atm_time_integration
 
 !$OMP BARRIER
 !$OMP MASTER
-      call mpas_dmpar_exch_halo_field(scalars_old_field)
+      call exchange_halo_group(block % domain, 'dynamics:scalars_old')
 !$OMP END MASTER
 !$OMP BARRIER
 
@@ -3672,21 +3654,7 @@ module atm_time_integration
          !
 !$OMP BARRIER
 !$OMP MASTER
-         tempField => tempFieldTarget
-
-         tempField % block => block
-         tempField % dimSizes(1) = nVertLevels
-         tempField % dimSizes(2) = 2
-         tempField % dimSizes(3) = nCells
-         tempField % sendList => block % parinfo % cellsToSend
-         tempField % recvList => block % parinfo % cellsToRecv
-         tempField % copyList => block % parinfo % cellsToCopy
-         tempField % prev => null()
-         tempField % next => null()
-         tempField % isActive = .true.
-
-         tempField % array => scale_arr
-         call mpas_dmpar_exch_halo_field(tempField, (/ 1 /))
+         call exchange_halo_group(block % domain, 'dynamics:scale')
 !$OMP END MASTER
 !$OMP BARRIER
 
@@ -3857,9 +3825,7 @@ module atm_time_integration
 
       real (kind=RKIND), dimension(:,:), pointer :: rr_save
 
-
-      real (kind=RKIND), dimension(:,:), pointer :: tend_rtheta_adv     ! needed for Tiedtke convection scheme
-      real (kind=RKIND), dimension(:,:), pointer :: rthdynten => null() ! needed for Grell-Freitas convection scheme
+      real (kind=RKIND), dimension(:,:), pointer :: rthdynten => null()
 
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 
@@ -3900,7 +3866,7 @@ module atm_time_integration
       real (kind=RKIND), pointer :: config_mpas_cam_coef
       logical, pointer :: config_rayleigh_damp_u
       real (kind=RKIND), pointer :: config_rayleigh_damp_u_timescale_days
-      integer, pointer :: config_number_rayleigh_damp_u_levels
+      integer, pointer :: config_number_rayleigh_damp_u_levels, config_number_cam_damping_levels
 
       logical :: inactive_rthdynten
 
@@ -3923,6 +3889,7 @@ module atm_time_integration
       call mpas_pool_get_config(configs, 'config_rayleigh_damp_u', config_rayleigh_damp_u)
       call mpas_pool_get_config(configs, 'config_rayleigh_damp_u_timescale_days', config_rayleigh_damp_u_timescale_days)
       call mpas_pool_get_config(configs, 'config_number_rayleigh_damp_u_levels', config_number_rayleigh_damp_u_levels)
+      call mpas_pool_get_config(configs, 'config_number_cam_damping_levels', config_number_cam_damping_levels)
 
       call mpas_pool_get_array(state, 'rho_zz', rho_zz, 2)
       call mpas_pool_get_array(state, 'u', u, 2)
@@ -3952,7 +3919,6 @@ module atm_time_integration
       call mpas_pool_get_array(diag, 'h_divergence', h_divergence)
       call mpas_pool_get_array(diag, 'exner', exner)
 
-      call mpas_pool_get_array(diag, 'tend_rtheta_adv', tend_rtheta_adv)
       if (associated(tend_physics)) then
          call mpas_pool_get_array(tend_physics, 'rthdynten', rthdynten)
       end if
@@ -4059,8 +4025,9 @@ module atm_time_integration
          config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2, &
          config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, dt, &
          config_mpas_cam_coef, &
-         config_rayleigh_damp_u, config_rayleigh_damp_u_timescale_days, config_number_rayleigh_damp_u_levels, &
-         tend_rtheta_adv, rthdynten, &
+         config_rayleigh_damp_u, config_rayleigh_damp_u_timescale_days, & 
+         config_number_rayleigh_damp_u_levels, config_number_cam_damping_levels, &
+         rthdynten, &
          cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
          cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
@@ -4086,8 +4053,9 @@ module atm_time_integration
       config_h_mom_eddy_visc2, config_v_mom_eddy_visc2, config_h_theta_eddy_visc2, config_v_theta_eddy_visc2, &
       config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, dt, &
       config_mpas_cam_coef, &
-      config_rayleigh_damp_u, config_rayleigh_damp_u_timescale_days, config_number_rayleigh_damp_u_levels, &
-      tend_rtheta_adv, rthdynten, &
+      config_rayleigh_damp_u, config_rayleigh_damp_u_timescale_days, &
+      config_number_rayleigh_damp_u_levels, config_number_cam_damping_levels, &
+      rthdynten, &
       cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
       cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
@@ -4210,9 +4178,8 @@ module atm_time_integration
 
       logical, intent(in) :: config_rayleigh_damp_u
       real (kind=RKIND), intent(in) :: config_rayleigh_damp_u_timescale_days
-      integer, intent(in) :: config_number_rayleigh_damp_u_levels
+      integer, intent(in) :: config_number_rayleigh_damp_u_levels, config_number_cam_damping_levels
 
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: tend_rtheta_adv
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rthdynten
 
       integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
@@ -4238,7 +4205,7 @@ module atm_time_integration
       real (kind=RKIND) :: h_theta_eddy_visc4, v_theta_eddy_visc2
       real (kind=RKIND) :: u_diffusion
 
-      real (kind=RKIND) :: kdiffu, z1, z2, z3, z4, zm, z0, zp, rayleigh_coef_inverse
+      real (kind=RKIND) :: kdiffu, z1, z2, z3, z4, zm, z0, zp, rayleigh_coef_inverse, visc2cam
 
       real (kind=RKIND), dimension( nVertLevels ) :: rayleigh_damp_coef
 
@@ -4251,7 +4218,6 @@ module atm_time_integration
       flux3(q_im2, q_im1, q_i, q_ip1, ua, coef3) =              &
                 flux4(q_im2, q_im1, q_i, q_ip1, ua) +           &
                 coef3*abs(ua)*((q_ip1 - q_im2)-3.*(q_i-q_im1))/12.0
-
 
       prandtl_inv = 1.0_RKIND / prandtl
       invDt = 1.0_RKIND / dt
@@ -4302,12 +4268,14 @@ module atm_time_integration
 
             do iCell = cellStart,cellEnd
                !
-               ! 2nd-order filter for top absorbing layer as in CAM-SE :  WCS January 2021
-               ! CAM6 SE damping layer coefficients from Peter Lauritzen with config_mpas_cam_coef = 1.0
+               ! 2nd-order filter for top absorbing layer similar to that in CAM-SE :  WCS 10 May 2017, modified 7 April 2023
+               ! From MPAS-CAM V4.0 code, with addition to config-specified coefficient (V4.0_coef = 0.2; SE_coef = 1.0)
                !
-               kdiff(nVertLevels,iCell) = max(kdiff(nVertLevels,iCell), 18.333*config_len_disp*config_mpas_cam_coef)
-               kdiff(nVertLevels-1,iCell) = max(kdiff(nVertLevels-1,iCell), 5.4*config_len_disp*config_mpas_cam_coef)
-               kdiff(nVertLevels-2,iCell) = max(kdiff(nVertLevels-2,iCell), 1.6*config_len_disp*config_mpas_cam_coef)
+               do k = nVertLevels-config_number_cam_damping_levels + 1, nVertLevels
+                  visc2cam = 4.0*2.0833*config_len_disp*config_mpas_cam_coef
+                  visc2cam = visc2cam*(1.0-real(nVertLevels-k)/real(config_number_cam_damping_levels))
+                  kdiff(k  ,iCell) = max(kdiff(nVertLevels  ,iCell),visc2cam)
+               end do
             end do
 
          end if
@@ -4940,8 +4908,7 @@ module atm_time_integration
 !DIR$ IVDEP
          do k=1,nVertLevels
             tend_theta(k,iCell) = tend_theta(k,iCell)*invAreaCell(iCell) -rdzw(k)*(wdtz(k+1)-wdtz(k))
-            tend_rtheta_adv(k,iCell) = tend_theta(k,iCell)   !  this is for the Tiedke scheme
-            rthdynten(k,iCell) = tend_theta(k,iCell)/rho_zz(k,iCell)  !  this is for the Grell-Freitas scheme
+            rthdynten(k,iCell)  = (tend_theta(k,iCell)-tend_rho(k,iCell)*theta_m(k,iCell))/rho_zz(k,iCell)
             tend_theta(k,iCell) = tend_theta(k,iCell) + rho_zz(k,iCell)*rt_diabatic_tend(k,iCell)
          end do
       end do

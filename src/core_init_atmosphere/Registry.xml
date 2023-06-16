@@ -98,6 +98,11 @@
                      description="Number of halo layers for fields"
                      possible_values="Integer values, typically 2 or 3; DO NOT CHANGE"/>
 
+                <nml_option name="config_interface_projection" type="character"     default_value="linear_interpolation"
+                     units="-"
+                     description="projecting layer values to the interface, linear vertical interpolation or integral" 
+                     possible_values="'linear_interpolation' or 'layer_integral' (layer average value)"/>
+
         </nml_record>
 
         <nml_record name="dimensions" in_defaults="true">
@@ -291,7 +296,12 @@
                      units="-"
                      description="Whether to switch sea-ice threshold from 0.5 to 0.02"
                      possible_values="true or false"/>
+        </nml_record>
 
+        <nml_record name="physics" in_defaults="false">
+                <nml_option name="config_tsk_seaice_threshold" type="real" default_value="100." units="K"
+                     description="surface temperature threshold below which water points are set to seaice points"
+                     possible_values="Positive real values"/>
         </nml_record>
 
         <nml_record name="io" in_defaults="true">
@@ -397,6 +407,7 @@
                         <var name="cellsOnVertex"/>
                         <var name="kiteAreasOnVertex"/>
                         <var name="meshDensity"/>
+                        <var name="nominalMinDc"/>
                         <var name="bdyMaskCell"/>
                         <var name="bdyMaskEdge"/>
                         <var name="bdyMaskVertex"/>
@@ -434,6 +445,8 @@
                         <var name="deriv_two" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="defc_a" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="defc_b" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="cell_gradient_coef_x" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
+                        <var name="cell_gradient_coef_y" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="coeffs_reconstruct" packages="gwd_stage_in;vertical_stage_in;met_stage_in"/>
                         <var name="cf1" packages="met_stage_in"/>
                         <var name="cf2" packages="met_stage_in"/>
@@ -496,6 +509,7 @@
                         <var name="cellsOnVertex"/>
                         <var name="kiteAreasOnVertex"/>
                         <var name="meshDensity"/>
+                        <var name="nominalMinDc"/>
                         <var name="bdyMaskCell"/>
                         <var name="bdyMaskEdge"/>
                         <var name="bdyMaskVertex"/>
@@ -533,6 +547,8 @@
                         <var name="deriv_two"/>
                         <var name="defc_a"/>
                         <var name="defc_b"/>
+                        <var name="cell_gradient_coef_x"/>
+                        <var name="cell_gradient_coef_y"/>
                         <var name="coeffs_reconstruct"/>
                         <var name="cf1" packages="vertical_stage_out;met_stage_out"/>
                         <var name="cf2" packages="vertical_stage_out;met_stage_out"/>
@@ -744,6 +760,9 @@
                 <var name="meshDensity" type="real" dimensions="nCells" units="unitless"
                      description="Mesh density function (used when generating the mesh) evaluated at a cell"/>
 
+                <var name="nominalMinDc" type="real" dimensions="" units="m"
+                     description="Nominal minimum dcEdge value where meshDensity == 1.0"/>
+
                 <!-- coefficients for vertical extrapolation to the surface -->
                 <var name="cf1" type="real" dimensions="" units="unitless"
                      description="Surface interpolation weight for level k=1 value"/>
@@ -926,6 +945,12 @@
 
                 <var name="defc_b" type="real" dimensions="maxEdges nCells" units="unitless"
                      description="Coefficients for computing the diagonal components of the horizontal deformation"/>
+
+                <var name="cell_gradient_coef_x" type="real" dimensions="maxEdges nCells" units="m^-1"
+                     description="Coefficients for computing the x (zonal) derivative of a cell-centered variable"/>
+
+                <var name="cell_gradient_coef_y" type="real" dimensions="maxEdges nCells" units="m^-1"
+                     description="Coefficients for computing the y (meridional) derivative of a cell-centered variable"/>
 
                 <!-- arrays required for reconstruction of velocity field -->
                 <var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
