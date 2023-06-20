@@ -135,7 +135,7 @@
  integer:: iCell,iEdge,iVtx
  integer,dimension(5) :: interp_list
  integer,dimension(:),allocatable  :: nhs
-      
+
  real(kind=RKIND), pointer :: scalefactor_ptr
  real(kind=RKIND) :: scalefactor
  real(kind=c_float),dimension(:,:,:),pointer,contiguous :: rarray
@@ -153,7 +153,7 @@
  integer, pointer :: nCells, nCellsSolve, nEdges, nVertices, maxEdges
  logical, pointer :: on_a_sphere
  real (kind=RKIND), pointer :: sphere_radius
- 
+
  integer, dimension(:), pointer :: nEdgesOnCell
  integer, dimension(:,:), pointer :: cellsOnCell
  integer, dimension(:,:), pointer :: verticesOnCell
@@ -254,7 +254,7 @@
  call mpas_pool_get_array(mesh, 'fEdge', fEdge)
  call mpas_pool_get_array(mesh, 'fVertex', fVertex)
  call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)
- 
+
  call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
  call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
  call mpas_pool_get_array(mesh, 'verticesOnCell', verticesOnCell)
@@ -339,8 +339,8 @@
 !
 ! Compute weights used in advection and deformation calculation
 !
- call atm_initialize_advection_rk(mesh, nCells, nEdges, maxEdges, on_a_sphere, sphere_radius) 
- call atm_initialize_deformation_weights(mesh, nCells, on_a_sphere, sphere_radius) 
+ call atm_initialize_advection_rk(mesh, nCells, nEdges, maxEdges, on_a_sphere, sphere_radius)
+ call atm_initialize_deformation_weights(mesh, nCells, on_a_sphere, sphere_radius)
 
 
 !
@@ -1177,7 +1177,7 @@
  end if
 
  call mpas_log_write('--- end interpolate ALBEDO12M')
- 
+
 !
 ! Interpolate LAI
 !
@@ -1621,6 +1621,8 @@ else
 
     integer :: iCell
     integer :: ierr
+    real (kind=R8KIND) :: rhs
+    real (kind=R8KIND), PARAMETER :: small_r8kind = 1.0E-6
 
     ierr = mgr % init(trim(geog_data_path))
     if (ierr /= 0) then
@@ -1648,8 +1650,13 @@ else
     call init_atm_map_static_data(mesh, mgr, kdtree, continuous_interp_criteria, terrain_interp_accumulation)
 
     do iCell = 1, nCells
-       ter(iCell) = real(real(ter_integer(iCell), kind=R8KIND) / real(nhs(iCell), kind=R8KIND), kind=RKIND)
-       ter(iCell) = ter(iCell) * scalefactor
+        if (nhs(iCell) /= 0 ) then
+            rhs = real(nhs(iCell), kind=R8KIND)
+        else
+            rhs = small_r8kind
+        end if
+        ter(iCell) = real(real(ter_integer(iCell), kind=R8KIND) / rhs, kind=RKIND)
+        ter(iCell) = ter(iCell) * scalefactor
     end do
 
     deallocate(ter_integer)
@@ -1795,7 +1802,11 @@ else
          do i = category_min+1,category_max
            lu_sum = lu_sum + ncat(i,iCell)
          enddo
-         landusef(:,iCell) = real(ncat(:,iCell)) / real(lu_sum)
+         if ( lu_sum /= 0 ) then
+            landusef(:,iCell) = real(ncat(:,iCell)) / real(lu_sum)
+         else
+            landusef(:,iCell) = real(ncat(:,iCell))
+         endif
      end do
      deallocate(ncat)
 
