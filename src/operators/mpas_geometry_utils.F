@@ -31,7 +31,6 @@ module mpas_geometry_utils
       real (kind=RKIND), intent(in) :: ax, ay, az, bx, by, bz, cx, cy, cz
 
       real (kind=RKIND) :: a, b, c          ! Side lengths of spherical triangle ABC
-      real (kind=RKIND) :: d,e,f
 
       real (kind=RKIND) :: ABx, ABy, ABz    ! The components of the vector AB
       real (kind=RKIND) :: ACx, ACy, ACz    ! The components of the vector AC
@@ -61,16 +60,7 @@ module mpas_geometry_utils
 
       s = 0.5*(a + b + c)
 !      sin_angle = sqrt((sin(s-b)*sin(s-c))/(sin(b)*sin(c)))   ! Eqn. (28)
-      e = sin(s-b)*sin(s-c)         ! fix a divide by zero problem, Y. Wang, 06/16/2023
-      d = sin(b)*sin(c)
-      if (d /= 0.0 ) then
-        f = e/d
-      else
-        f = 0.0
-      end if
-      !                                           f=         e         /       d
-      !sin_angle = sqrt(min(1.0_RKIND,max(0.0_RKIND,(sin(s-b)*sin(s-c))/(sin(b)*sin(c)))))   ! Eqn. (28)
-      sin_angle = sqrt(min(1.0_RKIND,max(0.0_RKIND,f)))   ! Eqn. (28)
+      sin_angle = sqrt(min(1.0_RKIND,max(0.0_RKIND,(sin(s-b)*sin(s-c))/(sin(b)*sin(c)))))   ! Eqn. (28)
 
       if ((Dx*ax + Dy*ay + Dz*az) >= 0.0) then
          mpas_sphere_angle =  2.0 * asin(max(min(sin_angle,1.0_RKIND),-1.0_RKIND))
