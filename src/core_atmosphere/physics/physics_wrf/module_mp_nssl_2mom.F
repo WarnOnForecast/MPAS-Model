@@ -2860,20 +2860,20 @@ SUBROUTINE nssl_2mom_driver(qv, qc, qr, qi, qs, qh, qhl, ccw, crw, cci, csw, chw
        ENDIF
 
 ! compute diagnostics S-band refelctivity at chosen levels at every time step
-     IF (diag_dbz .and. .not. makediag ) then
+    IF (diag_dbz .and. .not. makediag ) then
         IF ( present(ke_diag) ) THEN
-        kediagloc = ke_diag
-      ELSE
-        kediagloc = nz
-      ENDIF
-      !print*, "computing 1 level reflectivity"
+            kediagloc = ke_diag
+        ELSE
+            kediagloc = nz
+        ENDIF
+        !print*, "computing 1 level reflectivity"
         call radardd02(nx,ny,nz,nor,an,t0,         &
-     &    dbz2d,dn1,nz,cnoh,rho_qh,ipconc,kediagloc, 0, &
-          zdbz_start=17, zdbz_end=17)
+    &       dbz2d,dn1,nz,cnoh,rho_qh,ipconc,kediagloc, 0, &
+            zdbz_start=17, zdbz_end=17)
 
-       do ix = its, ite
-         refl_diagnostic(ix,jy) = dbz2d(ix,1,17)
-       enddo
+        do ix = its, ite
+            refl_diagnostic(ix,jy) = dbz2d(ix,1,17)
+        enddo
     ENDIF
 
 

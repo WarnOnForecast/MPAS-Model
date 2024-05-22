@@ -40,7 +40,7 @@
                      description="The number of atmospheric levels, always one more than the number of layers"/>
                 <dim name="nMonths" definition="namelist:config_months"
                      description="The number of months in a year"/>
-		<dim name="nlcat" definition="namelist:config_landuse_data" calculation='20 + 4 * merge(1,0,config_landuse_data(1:4)=="USGS")'
+                <dim name="nlcat" definition="namelist:config_landuse_data" calculation='20 + 4 * merge(1,0,config_landuse_data(1:4)=="USGS")'
                      description="The number of landuse categories used in the land surface model"/>
                 <dim name="nscat" definition="16" definition:"namelist:config_nsoilcat"
                      description="The number of soil categories used in the land surface model"/>
@@ -206,7 +206,7 @@
                      description="Whether to use specific-humidity as the first-guess moisture variable. If this option is False, relative humidity will be used."
                      possible_values="true or false"/>
 
-		<nml_option name="config_lai_data"           type="character"     default_value="MODIS"
+                <nml_option name="config_lai_data"           type="character"     default_value="MODIS"
                      units="-"
                      description="The climatological monthly leaf area index dataset to use (case 7 only)"
                      possible_values="`MODIS'"/>
@@ -374,8 +374,8 @@
 <!-- *************************************** Streams **************************************** -->
 <!-- **************************************************************************************** -->
 
-	<streams>
-		<stream name="input"
+    <streams>
+        <stream name="input"
                         type="input"
                         filename_template="x1.40962.grid.nc"
                         input_interval="initial_only"
@@ -472,9 +472,9 @@
                         <var name="zb" packages="met_stage_in"/>
                         <var name="zb3" packages="met_stage_in"/>
                         <var name="dss" packages="met_stage_in"/>
-		</stream>
+        </stream>
 
-		<stream name="output"
+        <stream name="output"
                         type="output"
                         filename_template="x1.40962.init.nc"
                         output_interval="initial_only"
@@ -615,9 +615,10 @@
                         <var name="refl10cm" packages="met_stage_out"/>
                         <var name="uReconstructZonal" packages="met_stage_out"/>
                         <var name="uReconstructMeridional" packages="met_stage_out"/>
-		</stream>
+                        <var name="rt_diabatic_tend" packages="met_stage_out"/>
+        </stream>
 
-		<stream name="surface"
+        <stream name="surface"
                         type="output"
                         filename_template="x1.40962.sfc_update.nc"
                         output_interval="86400"
@@ -625,13 +626,13 @@
                         packages="sfc_update"
                         immutable="true">
 
-			<var name="xtime"/>
-			<var name="Time"/>
-			<var name="sst"/>
-			<var name="xice"/>
-		</stream>
+            <var name="xtime"/>
+            <var name="Time"/>
+            <var name="sst"/>
+            <var name="xice"/>
+        </stream>
 
-		<stream name="lbc"
+        <stream name="lbc"
                         type="output"
                         filename_template="lbc.$Y-$M-$D_$h.$m.$s.nc"
                         output_interval="3:00:00"
@@ -639,12 +640,12 @@
                         packages="lbcs"
                         immutable="true">
 
-			<var name="xtime"/>
-			<var name="Time"/>
-			<var_struct name="lbc_state"/>
-		</stream>
+            <var name="xtime"/>
+            <var name="Time"/>
+            <var_struct name="lbc_state"/>
+        </stream>
 
-	</streams>
+    </streams>
 
 
 <!-- **************************************************************************************** -->
@@ -802,7 +803,7 @@
                 <var name="ivgtyp" name_in_code="lu_index" type="integer"  dimensions="nCells" units="unitless"
                      description="dominant vegetation category"/>
 
-		<var name="landusef" name_in_code="landusef" type="real"  dimensions="nlcat nCells" units="unitless"
+                <var name="landusef" name_in_code="landusef" type="real"  dimensions="nlcat nCells" units="unitless"
                      description="fraction of each landuse category present in each cell"/>
 
                 <var name="mminlu" type="text" dimensions="" units="unitless"
@@ -811,7 +812,7 @@
                 <var name="isltyp" name_in_code="soilcat_top"  type="integer"  dimensions="nCells" units="unitless"
                      description="dominate soil category"/>
 
-		<var name="soilf" name_in_code="soilf" type="real"  dimensions="nscat nCells" units="unitless"
+                <var name="soilf" name_in_code="soilf" type="real"  dimensions="nscat nCells" units="unitless"
                      description="fraction of each soil type present in each cell"/>
 
                 <var name="snoalb" type="real" dimensions="nCells" units="unitless"
@@ -1425,6 +1426,10 @@
                 <var name="refl10cm" type="real" dimensions="nVertLevels nCells Time" units="dBZ"
                      description="10 cm radar reflectivity"
                      packages="met_stage_out"/>
-</var_struct>
+
+                <var name="rt_diabatic_tend" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
+                     description="Tendency of modified potential temperature due to cloud microphysics"
+                     packages="met_stage_out"/>
+        </var_struct>
 
 </registry>
