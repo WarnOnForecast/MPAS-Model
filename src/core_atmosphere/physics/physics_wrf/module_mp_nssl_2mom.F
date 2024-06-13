@@ -232,7 +232,7 @@ MODULE module_mp_nssl_2mom
   real   , private :: qcmincwrn      = 2.0e-3    ! qc threshold for autonconversion (LFO; for 10ICE use qminrncw for ircnw != 5)
   real   , private :: cwdiap         = 20.0e-6   ! threshold diameter of cloud drops (Ferrier 1994 autoconversion)
   real   , private :: cwdisp         = 0.15      ! assume droplet dispersion parameter (can be 0.3 for maritime)
-  real   , private  :: ccn            = 0.6e+09   ! set in namelist!! Central plains CCN value
+  real   , private :: ccn            = 0.6e+09   ! set in namelist!! Central plains CCN value
   real   , public  :: qccn             ! ccn "mixing ratio"
   real   , private :: old_qccn = -1.0
   integer, private :: iauttim        = 1         ! 10-ice rain delay flag
