@@ -2860,6 +2860,7 @@ SUBROUTINE nssl_2mom_driver(qv, qc, qr, qi, qs, qh, qhl, ccw, crw, cci, csw, chw
        ENDIF
 
 ! compute diagnostics S-band refelctivity at chosen levels at every time step
+! LJR note: this is hardcoded to level 17 which corresponds to ~1km in RRFS levels
      IF (diag_dbz .and. .not. makediag ) then
         IF ( present(ke_diag) ) THEN
         kediagloc = ke_diag

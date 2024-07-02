@@ -1644,7 +1644,6 @@ else
     integer :: iCell
     integer :: ierr
     integer :: nans_1, nans_2, nans_3
-
     ierr = mgr % init(trim(geog_data_path))
 
     if (ierr /= 0) then

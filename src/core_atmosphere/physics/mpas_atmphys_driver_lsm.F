@@ -990,8 +990,8 @@
  type(mpas_pool_type),intent(inout):: sfc_input
 
 !local pointers:
- logical,pointer:: config_sfc_albedo
- character(len=StrKIND),pointer:: lsm_scheme
+ logical,pointer:: config_sfc_albedo,config_frac_seaice
+ character(len=StrKIND),pointer:: lsm_scheme,pbl_scheme
  character(len=StrKIND),pointer:: mminlu
  integer,pointer:: isice,lakemodel,iswater
  integer,pointer:: spp_lsm_loc ,mosaic_lu,mosaic_soil
@@ -1004,6 +1004,7 @@
 
  call mpas_pool_get_config(configs,'config_sfc_albedo' ,config_sfc_albedo )
  call mpas_pool_get_config(configs,'config_lsm_scheme',lsm_scheme)
+ call mpas_pool_get_config(configs,'config_pbl_scheme',pbl_scheme)
  call mpas_pool_get_config(configs,'config_lakemodel',lakemodel)
  call mpas_pool_get_array(sfc_input,'mminlu',mminlu)
  call mpas_pool_get_array(sfc_input,'isice' ,isice )
@@ -1070,7 +1071,7 @@
        
     case("sf_ruc")
        call mpas_timer_start('sf_ruc')
-       myjpbl = .false.
+       myjpbl = pbl_scheme(1:3)=="myj"
 
        call lsmruc( spp_lsm        = spp_lsm_loc   , lakemodel    = lakemodel   , lakemask  = lakemask_p,  &
                     rhosnf         = rhosnf_p      , precipfr     = precipfr_p  , mosaic_lu = mosaic_lu,   &

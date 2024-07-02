@@ -292,7 +292,6 @@
        endif ! sf_ruc
     endif ! lsm off
 
-
     !call to pbl schemes:
     if(config_pbl_scheme .ne. 'off' .and. config_sfclayer_scheme .ne. 'off') then
        call allocate_pbl(block%configs)

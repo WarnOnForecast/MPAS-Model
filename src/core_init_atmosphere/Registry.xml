@@ -41,8 +41,7 @@
                      description="The number of atmospheric levels, always one more than the number of layers"/>
                 <dim name="nMonths" definition="namelist:config_months"
                      description="The number of months in a year"/>
-                     description="The number of soil categories used in the land surface model"/>
-		<dim name="nlcat" definition="namelist:config_landuse_data" calculation='20 + 4 * merge(1,0,config_landuse_data(1:4)=="USGS")'
+                <dim name="nlcat" definition="namelist:config_landuse_data" calculation='20 + 4 * merge(1,0,config_landuse_data(1:4)=="USGS")'
                      description="The number of landuse categories used in the land surface model"/>
                 <dim name="nscat" definition="16" definition:"namelist:config_nsoilcat"
                      description="The number of soil categories used in the land surface model"/>
@@ -479,9 +478,9 @@
                         <var name="zb" packages="met_stage_in"/>
                         <var name="zb3" packages="met_stage_in"/>
                         <var name="dss" packages="met_stage_in"/>
-		</stream>
+        </stream>
 
-		<stream name="output"
+        <stream name="output"
                         type="output"
                         filename_template="x1.40962.init.nc"
                         output_interval="initial_only"
@@ -622,9 +621,10 @@
                         <var name="refl10cm" packages="met_stage_out"/>
                         <var name="uReconstructZonal" packages="met_stage_out"/>
                         <var name="uReconstructMeridional" packages="met_stage_out"/>
-		</stream>
+                        <var name="rt_diabatic_tend" packages="met_stage_out"/>
+        </stream>
 
-		<stream name="surface"
+        <stream name="surface"
                         type="output"
                         filename_template="x1.40962.sfc_update.nc"
                         output_interval="86400"
@@ -632,13 +632,13 @@
                         packages="sfc_update"
                         immutable="true">
 
-			<var name="xtime"/>
-			<var name="Time"/>
-			<var name="sst"/>
-			<var name="xice"/>
-		</stream>
+            <var name="xtime"/>
+            <var name="Time"/>
+            <var name="sst"/>
+            <var name="xice"/>
+        </stream>
 
-		<stream name="lbc"
+        <stream name="lbc"
                         type="output"
                         filename_template="lbc.$Y-$M-$D_$h.$m.$s.nc"
                         output_interval="3:00:00"
@@ -646,12 +646,12 @@
                         packages="lbcs"
                         immutable="true">
 
-			<var name="xtime"/>
-			<var name="Time"/>
-			<var_struct name="lbc_state"/>
-		</stream>
+            <var name="xtime"/>
+            <var name="Time"/>
+            <var_struct name="lbc_state"/>
+        </stream>
 
-	</streams>
+    </streams>
 
 
 <!-- **************************************************************************************** -->
@@ -839,6 +839,9 @@
                 <var name="albedo12m" type="real" dimensions="nMonths nCells" units="unitless"
                      description="monthly-mean climatological surface albedo"/>
                      
+                <var name="lai12m" type="real" dimensions="nMonths nCells" units="unitless"
+                     description="monthly-mean climatological leaf area index"/>
+
                 <var name="lai12m" type="real" dimensions="nMonths nCells" units="unitless"
                      description="monthly-mean climatological leaf area index"/>
 
@@ -1441,6 +1444,10 @@
                 <var name="refl10cm" type="real" dimensions="nVertLevels nCells Time" units="dBZ"
                      description="10 cm radar reflectivity"
                      packages="met_stage_out"/>
-</var_struct>
+
+                <var name="rt_diabatic_tend" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
+                     description="Tendency of modified potential temperature due to cloud microphysics"
+                     packages="met_stage_out"/>
+        </var_struct>
 
 </registry>
