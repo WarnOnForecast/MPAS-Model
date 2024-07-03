@@ -670,51 +670,51 @@
        enddo
        enddo
 
-    case("sf_myj")
-       !input variables:
-       call mpas_pool_get_array(mesh        ,'zgrid' ,zgrid)
-       call mpas_pool_get_array(diag_physics, 'z0'   ,z0   )
-       call mpas_pool_get_array(diag_physics, 'ct', ct)
-       call mpas_pool_get_array(diag_physics, 'pshltr', pshltr)
-       call mpas_pool_get_array(diag_physics, 'qshltr', qshltr)
-       call mpas_pool_get_array(diag_physics, 'q10', q10)
-       call mpas_pool_get_array(diag_physics, 'th10', th10)
-       call mpas_pool_get_array(diag_physics, 'tshltr', tshltr)
-       call mpas_pool_get_array(diag_physics, 'thz0', thz0)
-       call mpas_pool_get_array(diag_physics, 'uz0', uz0)
-       call mpas_pool_get_array(diag_physics, 'vz0', vz0)
-       call mpas_pool_get_array(diag_physics, 'qz0', qz0)
-       call mpas_pool_get_array(diag_physics, 'akhs', akhs)
-       call mpas_pool_get_array(diag_physics, 'akms', akms)
-       call mpas_pool_get_array(diag_physics, 'lowlyr', lowlyr)
-       call mpas_pool_get_array(diag_physics, 'tke_pbl',tke_pbl)
-       do j = jts, jte
-       do k = kts, kte
-       do i = its, ite
-          if (k==kts) then
-             !input variables:
-             ht_p(i,j) = zgrid(1,i)
-             z0_p(i,j) = z0(i)
-             lowlyr_p(i,j) = lowlyr(i)
-             !inout variables
-             thz0_p(i,j) = thz0(i)
-             qz0_p(i,j) = qz0(i)
-             uz0_p(i,j) = uz0(i)
-             vz0_p(i,j) = vz0(i)
-             akms_p(i,j) = akms(i)
-             akhs_p(i,j) = akhs(i)
-             !out variables
-             ct_p(i,j) = 0._RKIND
-             tshltr_p(i,j) = 0._RKIND
-             th10_p(i,j) = 0._RKIND
-             qshltr_p(i,j) = 0._RKIND
-             q10_p(i,j) = 0._RKIND
-             pshltr_p(i,j) = 0._RKIND
-          endif
-          tkepbl_p(i,k,j) = tke_pbl(k,i)
-       enddo
-       enddo
-       enddo
+!    case("sf_myj")
+!       !input variables:
+!       call mpas_pool_get_array(mesh        ,'zgrid' ,zgrid)
+!       call mpas_pool_get_array(diag_physics, 'z0'   ,z0   )
+!       call mpas_pool_get_array(diag_physics, 'ct', ct)
+!       call mpas_pool_get_array(diag_physics, 'pshltr', pshltr)
+!       call mpas_pool_get_array(diag_physics, 'qshltr', qshltr)
+!       call mpas_pool_get_array(diag_physics, 'q10', q10)
+!       call mpas_pool_get_array(diag_physics, 'th10', th10)
+!       call mpas_pool_get_array(diag_physics, 'tshltr', tshltr)
+!       call mpas_pool_get_array(diag_physics, 'thz0', thz0)
+!       call mpas_pool_get_array(diag_physics, 'uz0', uz0)
+!       call mpas_pool_get_array(diag_physics, 'vz0', vz0)
+!       call mpas_pool_get_array(diag_physics, 'qz0', qz0)
+!       call mpas_pool_get_array(diag_physics, 'akhs', akhs)
+!       call mpas_pool_get_array(diag_physics, 'akms', akms)
+!       call mpas_pool_get_array(diag_physics, 'lowlyr', lowlyr)
+!       call mpas_pool_get_array(diag_physics, 'tke_pbl',tke_pbl)
+!       do j = jts, jte
+!       do k = kts, kte
+!       do i = its, ite
+!          if (k==kts) then
+!             !input variables:
+!             ht_p(i,j) = zgrid(1,i)
+!             z0_p(i,j) = z0(i)
+!             lowlyr_p(i,j) = lowlyr(i)
+!             !inout variables
+!             thz0_p(i,j) = thz0(i)
+!             qz0_p(i,j) = qz0(i)
+!             uz0_p(i,j) = uz0(i)
+!             vz0_p(i,j) = vz0(i)
+!             akms_p(i,j) = akms(i)
+!             akhs_p(i,j) = akhs(i)
+!             !out variables
+!             ct_p(i,j) = 0._RKIND
+!             tshltr_p(i,j) = 0._RKIND
+!             th10_p(i,j) = 0._RKIND
+!             qshltr_p(i,j) = 0._RKIND
+!             q10_p(i,j) = 0._RKIND
+!             pshltr_p(i,j) = 0._RKIND
+!          endif
+!          tkepbl_p(i,k,j) = tke_pbl(k,i)
+!       enddo
+!       enddo
+!       enddo
 
     case("sf_myj")
        !input variables:
@@ -1334,38 +1334,6 @@
 
     case("sf_mynn")
        call sf_mynn_init(errmsg,errflg)
-
-    case("sf_myj") 
-       ! only lowlyr, ust, z0 inout, rest in only
-       if (.not.allocated(lowlyr_p)) allocate(lowlyr_p(ims:ime,jms:jme))
-       if (.not.allocated(ust_p)   ) allocate(ust_p(ims:ime,jms:jme)   )
-       if (.not.allocated(z0_p)    ) allocate(z0_p(ims:ime,jms:jme)    )
-       if (.not.allocated(xland_p) ) allocate(xland_p(ims:ime,jms:jme) )
-       if (.not.allocated(xice_p)  ) allocate(xice_p(ims:ime,jms:jme)  )
-       if (.not.allocated(ivgtyp_p)) allocate(ivgtyp_p(ims:ime,jms:jme))
-   
-       do j = jts,jte
-       do i = its,ite
-          !lowlyr_p(i,j) = lowlyr(i)
-          !ust_p(i,j)    = ust(i)
-          !z0_p(i,j)     = z0(i)
-          xland_p(i,j)  = xland(i)
-          xice_p(i,j)   = xice(i)
-          ivgtyp_p(i,j) = ivgtyp(i)
-       enddo
-       enddo
-
-       call MYJSFCINIT(lowlyr_p, ust_p, z0_p, xland_p, xice_p,        & 
-                       ivgtyp_p, config_do_restart, allowed_to_read,   &
-                       ids, ide, jds, jde, kds, kde, ims, ime, jms,    &
-                       jme, kms, kme, its, ite, jts, jte, kts, kte)
-       do j = jts,jte
-       do i = its,ite
-          lowlyr(i) = lowlyr_p(i,j)
-       !   ust(i)    = ust_p(i,j)
-       !   z0(i)    = z0_p(i,j)
-       enddo
-       enddo
 
     case("sf_myj") 
        ! only lowlyr, ust, z0 inout, rest in only
