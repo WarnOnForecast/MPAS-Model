@@ -1,3 +1,4 @@
 [submodule "src/core_atmosphere/physics/TEMPO"]
 	path = src/core_atmosphere/physics/TEMPO
-	url = https://github.com/NCAR/TEMPO.git
+	url = https://github.com/NOAA-National-Severe-Storms-Laboratory/frdd-TEMPO.git
+        branch = NSSL_gnu
