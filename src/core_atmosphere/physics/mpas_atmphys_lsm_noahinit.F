@@ -215,8 +215,8 @@
  character(len=*),intent(inout):: mminlu, mminsl
 
 !local variables:
- character*128:: mess,message
- character*128:: astring
+ character(len=128) :: mess,message
+ character(len=128) :: astring
 
  integer,parameter:: open_ok  = 0
  integer,parameter:: loop_max = 10

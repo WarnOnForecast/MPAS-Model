@@ -35,7 +35,8 @@ gnu:   # BUILDTARGET GNU Fortran, C, and C++ compilers
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
 	"OPENACC = $(OPENACC)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" \
+	"NETCDFLIBS = -lhdf5_hl -lhdf5 -lm -lz -ldl -lbz2 -lzstd -lcurl -lstdc++" )
 
 xlf:   # BUILDTARGET IBM XL compilers
 	( $(MAKE) all \
@@ -811,7 +812,7 @@ endif
 	CPPINCLUDES += -I$(NETCDF)/include
 	FCINCLUDES += -I$(NETCDF)/include
 	LIBS += -L$(NETCDF)/$(NETCDFLIBLOC)
-	NCLIB = -lnetcdf -lhdf5_hl -lhdf5 -lm -lz -ldl -lbz2 -lzstd -lcurl -lstdc++
+	NCLIB = -lnetcdf $(NETCDFLIBS)
 	NCLIBF = -lnetcdff
 	ifneq ($(wildcard $(NETCDF)/$(NETCDFLIBLOC)/libnetcdff.*), ) # CHECK FOR NETCDF4
 		LIBS += $(NCLIBF)

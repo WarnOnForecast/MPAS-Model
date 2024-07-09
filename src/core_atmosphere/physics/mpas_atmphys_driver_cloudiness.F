@@ -195,11 +195,11 @@
           do j = jts,jte
           do k = kts,kte
           do i = its,ite
-             if	(qcrad_p(i,k,j) .gt. 1e-6 .or. &
+             if (qcrad_p(i,k,j) .gt. 1e-6 .or. &
                  qirad_p(i,k,j) .gt. 1e-9 .or. &
                  qsrad_p(i,k,j) .gt. 1e-8 ) then
                 cldfrac_p(i,k,j) = 1._RKIND
-      	     endif
+             endif
           enddo
           enddo
           enddo

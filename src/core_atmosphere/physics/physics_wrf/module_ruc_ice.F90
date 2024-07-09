@@ -20,7 +20,7 @@ use mpas_log, only: mpas_log_write
 #define fatal_error(m) call wrf_error_fatal( m )
 #endif
 
-   integer :: targetcell= 0 !45415
+   integer, private :: targetcell= 0 !45415
 
 
 contains

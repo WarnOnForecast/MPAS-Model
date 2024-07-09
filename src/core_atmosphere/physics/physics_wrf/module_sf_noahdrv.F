@@ -858,9 +858,9 @@ CONTAINS
         ELSE
           IF (SFCTMP <=  273.15) THEN
             FFROZP = 1.0
-	  ELSE
-	    FFROZP = 0.0
-	  ENDIF
+          ELSE
+            FFROZP = 0.0
+          ENDIF
         ENDIF
 !***
         IF((XLAND(I,J)-1.5).GE.0.)THEN                                  ! begining of land/sea if block
@@ -963,8 +963,8 @@ CONTAINS
                       IVGTYP(I,J) == LCZ_3      .or. IVGTYP(I,J) == LCZ_4 .or. IVGTYP(I,J) == LCZ_5 .or. &
                       IVGTYP(I,J) == LCZ_6      .or. IVGTYP(I,J) == LCZ_7 .or. IVGTYP(I,J) == LCZ_8 .or. &
                       IVGTYP(I,J) == LCZ_9      .or. IVGTYP(I,J) == LCZ_10 .or. IVGTYP(I,J) == LCZ_11 ) THEN
-	
-		 VEGTYP = NATURAL
+        
+                 VEGTYP = NATURAL
                  SHDFAC = SHDTBL(NATURAL)
                  ALBEDOK =0.2         !  0.2
                  ALBBRD  =0.2         !0.2
@@ -972,14 +972,14 @@ CONTAINS
                  LWDN   = GLW(I,J) * EMISSI
                  SOLNET = SOLDN * (1.0 - ALBEDOK)
 
-		 IF ( FRC_URB2D(I,J) < 0.99 ) THEN
+                 IF ( FRC_URB2D(I,J) < 0.99 ) THEN
                    if(sf_urban_physics.eq.1)then
                      T1= ( TSK(I,J) -FRC_URB2D(I,J) * TS_URB2D (I,J) )/ (1-FRC_URB2D(I,J))
                    elseif((sf_urban_physics.eq.2).OR.(sf_urban_physics.eq.3))then
                      T1=tsk_rural_bep(i,j)
                    endif
-	         ELSE
-		 T1 = TSK(I,J)
+                 ELSE
+                 T1 = TSK(I,J)
                  ENDIF
                 ENDIF
            ELSE
@@ -997,7 +997,7 @@ CONTAINS
            USOIL = 1
            DSOIL = 2
            IRIOPTION=IRI_SCHEME
-	  IF(SF_URBAN_PHYSICS == 1) THEN
+          IF(SF_URBAN_PHYSICS == 1) THEN
            OMG= OMG_URB2D(I,J)   
            tloc=mod(int(OMG/3.14159*180./15.+12.+0.5 ),24)
            if (tloc.lt.0) tloc=tloc+24
@@ -1021,7 +1021,7 @@ CONTAINS
                 ENDIF
            ENDIF
 
-	  IF(SF_URBAN_PHYSICS == 2 .or. SF_URBAN_PHYSICS == 3) THEN
+          IF(SF_URBAN_PHYSICS == 2 .or. SF_URBAN_PHYSICS == 3) THEN
           IF(AOASIS > 1.0) THEN
           FATAL_ERROR('Urban oasis option is for SF_URBAN_PHYSICS == 1 only')
           ENDIF
@@ -1112,7 +1112,7 @@ CONTAINS
                  EC,EDIR,ET,ETT,ESNOW,DRIP,DEW,                    &    !O
                  BETA,ETP,SSOIL,                                   &    !O
                  FLX1,FLX2,FLX3,                                   &    !O
-		 FLX4,FVB,FBUR,FGSN,UA_PHYS,                       &    !UA 
+                 FLX4,FVB,FBUR,FGSN,UA_PHYS,                       &    !UA 
                  SNOMLT,SNCOVR,                                    &    !O
                  RUNOFF1,RUNOFF2,RUNOFF3,                          &    !O
                  RC,PC,RSMIN,XLAI,RCS,RCT,RCQ,RCSOIL,              &    !O
@@ -1293,9 +1293,9 @@ CONTAINS
 !       ENDIF
 
         FLX4_2D(I,J)  = FLX4
-	FVB_2D(I,J)   = FVB
-	FBUR_2D(I,J)  = FBUR
-	FGSN_2D(I,J)  = FGSN
+        FVB_2D(I,J)   = FVB
+        FBUR_2D(I,J)  = FBUR
+        FGSN_2D(I,J)  = FGSN
 
      !
      ! Residual of surface energy balance equation terms
@@ -1839,7 +1839,7 @@ CONTAINS
    INTEGER , DIMENSION(jds:jde) :: my_seeds
    INTEGER :: irr_ph,irr_freq
    REAL,DIMENSION(ims:ime, jms:jme ) :: rand_tmp
-   character*256 :: MMINSL
+   character(LEN=256) :: MMINSL
         MMINSL='STAS'
 !
 
@@ -1999,8 +1999,8 @@ CONTAINS
         integer :: ierr
         INTEGER , PARAMETER :: OPEN_OK = 0
 
-        character*128 :: mess , message
-        character*256 :: a_string
+        character(len=128) :: mess , message
+        character(len=256) :: a_string
         logical, external :: wrf_dm_on_monitor
         integer , parameter :: loop_max   = 10
         integer             :: loop_count
@@ -2094,7 +2094,7 @@ CONTAINS
                         LAIMAXTBL(LC),EMISSMINTBL(LC),             &
                         EMISSMAXTBL(LC), ALBEDOMINTBL(LC),         &
                         ALBEDOMAXTBL(LC), Z0MINTBL(LC), Z0MAXTBL(LC),&
-			ZTOPVTBL(LC), ZBOTVTBL(LC)
+                        ZTOPVTBL(LC), ZBOTVTBL(LC)
           ENDDO
 !
           READ (19,*)
@@ -3295,9 +3295,9 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
               ELSE
                 IF (SFCTMP <=  273.15) THEN
                   FFROZP = 1.0
-      	  ELSE
-      	    FFROZP = 0.0
-      	  ENDIF
+                ELSE
+                  FFROZP = 0.0
+                ENDIF
               ENDIF
       !***
               IF((XLAND(I,J)-1.5).GE.0.)THEN                                  ! begining of land/sea if block
@@ -3395,12 +3395,12 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
 
            !           IF( IVGTYP(I,J) == ISURBAN .or. IVGTYP(I,J) == LOW_DENSITY_RESIDENTIAL .or. &
            !            IVGTYP(I,J) == HIGH_DENSITY_RESIDENTIAL .or. IVGTYP(I,J) == HIGH_INTENSITY_INDUSTRIAL) THEN
-           !	 VEGTYP = NATURAL
+           !         VEGTYP = NATURAL
            !            SHDFAC = SHDTBL(NATURAL)
            !            ALBEDOK =0.2         !  0.2
            !            ALBBRD  =0.2         !0.2
            !            EMISSI = 0.98                                 !for VEGTYP=5
-           !	 IF ( FRC_URB2D(I,J) < 0.99 ) THEN
+           !         IF ( FRC_URB2D(I,J) < 0.99 ) THEN
           !               if(sf_urban_physics.eq.1)then
           !       T1= ( TSK(I,J) -FRC_URB2D(I,J) * TS_URB2D (I,J) )/ (1-FRC_URB2D(I,J))
           !               elseif((sf_urban_physics.eq.2).OR.(sf_urban_physics.eq.3))then
@@ -3409,15 +3409,15 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
           !            r3= (1.-frc_urb2d(i,j))
          !             t1= ((r1-r2)/r3)**.25
          !                endif
-         !	         ELSE
-         !		 T1 = TSK(I,J)
+         !                 ELSE
+         !                 T1 = TSK(I,J)
          !              ENDIF
          !             ENDIF
           !       ELSE
            !            IF( IVGTYP(I,J) == ISURBAN .or. IVGTYP(I,J) == LOW_DENSITY_RESIDENTIAL .or. &
           !              IVGTYP(I,J) == HIGH_DENSITY_RESIDENTIAL .or. IVGTYP(I,J) == HIGH_INTENSITY_INDUSTRIAL) THEN
            !             VEGTYP = ISURBAN
-           !      	 ENDIF
+           !               ENDIF
            !      ENDIF
       
             Noah_call=.TRUE.
@@ -3441,7 +3441,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                    IVGTYP(I,J) == LCZ_6      .or. IVGTYP(I,J) == LCZ_7 .or. IVGTYP(I,J) == LCZ_8 .or. &
                    IVGTYP(I,J) == LCZ_9      .or. IVGTYP(I,J) == LCZ_10 .or. IVGTYP(I,J) == LCZ_11 ) THEN
                        Noah_call = .TRUE.                       
-              	       VEGTYP = NATURAL                                              
+                             VEGTYP = NATURAL                                              
                        SHDFAC = SHDTBL(NATURAL)
                        ALBEDOK =0.2         !  0.2
                        ALBBRD  =0.2         !  0.2
@@ -3449,7 +3449,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                        LWDN   = GLW(I,J) * EMISSI
                        SOLNET = SOLDN * (1.0 - ALBEDOK)
 
-      		      T1= TS_RUL2D_mosaic(I,mosaic_i,J)
+                            T1= TS_RUL2D_mosaic(I,mosaic_i,J)
                        
                  ENDIF
       
@@ -3465,7 +3465,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
            if (tloc.lt.0) tloc=tloc+24
            if (tloc==0) tloc=24
            CALL cal_mon_day(julian,julyr,jmonth,jday) 
-	  IF(SF_URBAN_PHYSICS == 1) THEN
+          IF(SF_URBAN_PHYSICS == 1) THEN
              IF( IVGTYP(I,J) == ISURBAN    .or. IVGTYP(I,J) == LCZ_1 .or. IVGTYP(I,J) == LCZ_2 .or. &
                  IVGTYP(I,J) == LCZ_3      .or. IVGTYP(I,J) == LCZ_4 .or. IVGTYP(I,J) == LCZ_5 .or. &
                  IVGTYP(I,J) == LCZ_6      .or. IVGTYP(I,J) == LCZ_7 .or. IVGTYP(I,J) == LCZ_8 .or. &
@@ -3483,7 +3483,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                 ENDIF
            ENDIF
 
-	  IF(SF_URBAN_PHYSICS == 2 .or. SF_URBAN_PHYSICS == 3) THEN
+          IF(SF_URBAN_PHYSICS == 2 .or. SF_URBAN_PHYSICS == 3) THEN
           IF(AOASIS > 1.0) THEN
           CALL wrf_error_fatal('Urban oasis option is for SF_URBAN_PHYSICS == 1 only')
           ENDIF
@@ -3556,7 +3556,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                        EC,EDIR,ET,ETT,ESNOW,DRIP,DEW,                    &    !O
                        BETA,ETP,SSOIL,                                   &    !O
                        FLX1,FLX2,FLX3,                                   &    !O
-      		 FLX4,FVB,FBUR,FGSN,UA_PHYS,                             &    !UA 
+                       FLX4,FVB,FBUR,FGSN,UA_PHYS,                             &    !UA 
                        SNOMLT,SNCOVR,                                    &    !O
                        RUNOFF1,RUNOFF2,RUNOFF3,                          &    !O
                        RC,PC,RSMIN,XLAI,RCS,RCT,RCQ,RCSOIL,              &    !O
@@ -3693,9 +3693,9 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
       !       ENDIF
       
               FLX4_2D(I,J)  = FLX4
-      	FVB_2D(I,J)   = FVB
-      	FBUR_2D(I,J)  = FBUR
-      	FGSN_2D(I,J)  = FGSN
+              FVB_2D(I,J)   = FVB
+              FBUR_2D(I,J)  = FBUR
+              FGSN_2D(I,J)  = FGSN
       
            !
            ! Residual of surface energy balance equation terms
@@ -3980,7 +3980,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
 
                   TGR_URB2D(I,J) =TGR_URB 
                   CMCR_URB2D(I,J)=CMCR_URB
-            	    FLXHUMR_URB2D(I,J)=FLXHUMR_URB 
+                        FLXHUMR_URB2D(I,J)=FLXHUMR_URB 
                   FLXHUMB_URB2D(I,J)=FLXHUMB_URB
                   FLXHUMG_URB2D(I,J)=FLXHUMG_URB
                   DRELR_URB2D(I,J) = DRELR_URB 
@@ -4015,29 +4015,29 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                   ENDIF
                   
                      ! 2D to 3D  mosaic danli
-      	    	              
-      	    	                       TR_URB2D_mosaic(I,mosaic_i,J)=TR_URB2D(I,J)                               
-      	    	    	               TB_URB2D_mosaic(I,mosaic_i,J)=TB_URB2D(I,J)                                   
-      	    	    	               TG_URB2D_mosaic(I,mosaic_i,J)=TG_URB2D(I,J)                                   
-      	    	    	               TC_URB2D_mosaic(I,mosaic_i,J)=TC_URB2D(I,J)                                  
-      	    	    	               QC_URB2D_mosaic(I,mosaic_i,J)=QC_URB2D(I,J)                                   
-      	    	    	               UC_URB2D_mosaic(I,mosaic_i,J)=UC_URB2D(I,J)                                   
-      	    	    	               TS_URB2D_mosaic(I,mosaic_i,J)=TS_URB2D(I,J)                                   
-      	    	    	               TS_RUL2D_mosaic(I,mosaic_i,J)=T1                                
-      	    	    	  	  
-      	    	    	  	              DO K = 1,num_roof_layers
-      	    	    	  	                TRL_URB3D_mosaic(I,K+(mosaic_i-1)*num_roof_layers,J)=TRL_URB3D(I,K,J) 
-      	    	    	  	              END DO
-      	    	    	  	              DO K = 1,num_wall_layers
-      	    	    	  	                TBL_URB3D_mosaic(I,K+(mosaic_i-1)*num_roof_layers,J)=TBL_URB3D(I,K,J) 
-      	    	    	  	              END DO
-      	    	    	  	              DO K = 1,num_road_layers
-      	    	    	  	                TGL_URB3D_mosaic(I,K+(mosaic_i-1)*num_roof_layers,J)=TGL_URB3D(I,K,J) 
-      	    	    	                        END DO
-      	    	    	            
-      	    	    	              SH_URB2D_mosaic(I,mosaic_i,J) = SH_URB2D(I,J)
-      	    	    	  	      LH_URB2D_mosaic(I,mosaic_i,J) = LH_URB2D(I,J)
-      	    	    	              G_URB2D_mosaic(I,mosaic_i,J)  = G_URB2D(I,J)
+                                        
+                                                 TR_URB2D_mosaic(I,mosaic_i,J)=TR_URB2D(I,J)                               
+                                                     TB_URB2D_mosaic(I,mosaic_i,J)=TB_URB2D(I,J)                                   
+                                                     TG_URB2D_mosaic(I,mosaic_i,J)=TG_URB2D(I,J)                                   
+                                                     TC_URB2D_mosaic(I,mosaic_i,J)=TC_URB2D(I,J)                                  
+                                                     QC_URB2D_mosaic(I,mosaic_i,J)=QC_URB2D(I,J)                                   
+                                                     UC_URB2D_mosaic(I,mosaic_i,J)=UC_URB2D(I,J)                                   
+                                                     TS_URB2D_mosaic(I,mosaic_i,J)=TS_URB2D(I,J)                                   
+                                                     TS_RUL2D_mosaic(I,mosaic_i,J)=T1                                
+                                                  
+                                                              DO K = 1,num_roof_layers
+                                                                TRL_URB3D_mosaic(I,K+(mosaic_i-1)*num_roof_layers,J)=TRL_URB3D(I,K,J) 
+                                                              END DO
+                                                              DO K = 1,num_wall_layers
+                                                                TBL_URB3D_mosaic(I,K+(mosaic_i-1)*num_roof_layers,J)=TBL_URB3D(I,K,J) 
+                                                              END DO
+                                                              DO K = 1,num_road_layers
+                                                                TGL_URB3D_mosaic(I,K+(mosaic_i-1)*num_roof_layers,J)=TGL_URB3D(I,K,J) 
+                                                              END DO
+                                                  
+                                                    SH_URB2D_mosaic(I,mosaic_i,J) = SH_URB2D(I,J)
+                                                      LH_URB2D_mosaic(I,mosaic_i,J) = LH_URB2D(I,J)
+                                                    G_URB2D_mosaic(I,mosaic_i,J)  = G_URB2D(I,J)
                                     RN_URB2D_mosaic(I,mosaic_i,J) = RN_URB2D(I,J)
                                     
                 END IF
@@ -4261,9 +4261,9 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
               ELSE
                 IF (SFCTMP <=  273.15) THEN
                   FFROZP = 1.0
-      	  ELSE
-      	    FFROZP = 0.0
-      	  ENDIF
+                ELSE
+                  FFROZP = 0.0
+                ENDIF
               ENDIF
       !***
               IF((XLAND(I,J)-1.5).GE.0.)THEN                                  ! begining of land/sea if block
@@ -4362,7 +4362,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                     IVGTYP(I,J) == LCZ_6      .or. IVGTYP(I,J) == LCZ_7 .or. IVGTYP(I,J) == LCZ_8 .or. &
                     IVGTYP(I,J) == LCZ_9      .or. IVGTYP(I,J) == LCZ_10 .or. IVGTYP(I,J) == LCZ_11 ) THEN
 
-      		 VEGTYP = NATURAL
+                       VEGTYP = NATURAL
                        SHDFAC = SHDTBL(NATURAL)
                        ALBEDOK =0.2         !  0.2
                        ALBBRD  =0.2         !0.2
@@ -4370,14 +4370,14 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                        LWDN   = GLW(I,J) * EMISSI
                        SOLNET = SOLDN * (1.0 - ALBEDOK)
 
-      		 IF ( FRC_URB2D(I,J) < 0.99 ) THEN
+                       IF ( FRC_URB2D(I,J) < 0.99 ) THEN
                    if(sf_urban_physics.eq.1)then
                      T1= ( TSK(I,J) -FRC_URB2D(I,J) * TS_URB2D (I,J) )/ (1-FRC_URB2D(I,J))
                    elseif((sf_urban_physics.eq.2).OR.(sf_urban_physics.eq.3))then
                      T1=tsk_rural_bep(i,j)
                    endif
-     	         ELSE
-      		 T1 = TSK(I,J)
+                      ELSE
+                       T1 = TSK(I,J)
                        ENDIF
                       ENDIF
                  ELSE
@@ -4386,7 +4386,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                              IVGTYP(I,J) == LCZ_6      .or. IVGTYP(I,J) == LCZ_7 .or. IVGTYP(I,J) == LCZ_8 .or. &
                              IVGTYP(I,J) == LCZ_9      .or. IVGTYP(I,J) == LCZ_10 .or. IVGTYP(I,J) == LCZ_11 ) THEN
                         VEGTYP = ISURBAN
-                 	 ENDIF
+                          ENDIF
                  ENDIF
 
 
@@ -4400,7 +4400,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
            if (tloc.lt.0) tloc=tloc+24
            if (tloc==0) tloc=24
            CALL cal_mon_day(julian,julyr,jmonth,jday) 
-	  IF(SF_URBAN_PHYSICS == 1) THEN
+          IF(SF_URBAN_PHYSICS == 1) THEN
                           IF( IVGTYP(I,J) == ISURBAN    .or. IVGTYP(I,J) == LCZ_1 .or. IVGTYP(I,J) == LCZ_2 .or. &
                              IVGTYP(I,J) == LCZ_3      .or. IVGTYP(I,J) == LCZ_4 .or. IVGTYP(I,J) == LCZ_5 .or. &
                              IVGTYP(I,J) == LCZ_6      .or. IVGTYP(I,J) == LCZ_7 .or. IVGTYP(I,J) == LCZ_8 .or. &
@@ -4418,7 +4418,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                 ENDIF
            ENDIF
 
-	  IF(SF_URBAN_PHYSICS == 2 .or. SF_URBAN_PHYSICS == 3) THEN
+          IF(SF_URBAN_PHYSICS == 2 .or. SF_URBAN_PHYSICS == 3) THEN
           IF(AOASIS > 1.0) THEN
           CALL wrf_error_fatal('Urban oasis option is for SF_URBAN_PHYSICS == 1 only')
           ENDIF
@@ -4485,7 +4485,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                        EC,EDIR,ET,ETT,ESNOW,DRIP,DEW,                    &    !O
                        BETA,ETP,SSOIL,                                   &    !O
                        FLX1,FLX2,FLX3,                                   &    !O
-      		 FLX4,FVB,FBUR,FGSN,UA_PHYS,                             &    !UA 
+                       FLX4,FVB,FBUR,FGSN,UA_PHYS,                             &    !UA 
                        SNOMLT,SNCOVR,                                    &    !O
                        RUNOFF1,RUNOFF2,RUNOFF3,                          &    !O
                        RC,PC,RSMIN,XLAI,RCS,RCT,RCQ,RCSOIL,              &    !O
@@ -4624,9 +4624,9 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
       !       ENDIF
       
               FLX4_2D(I,J)  = FLX4
-      	FVB_2D(I,J)   = FVB
-      	FBUR_2D(I,J)  = FBUR
-      	FGSN_2D(I,J)  = FGSN
+              FVB_2D(I,J)   = FVB
+              FBUR_2D(I,J)  = FBUR
+              FGSN_2D(I,J)  = FGSN
            !
            ! Residual of surface energy balance equation terms
            !
@@ -4685,7 +4685,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                   DO K = 1,num_roof_layers
                     TRL_URB(K) = TRL_URB3D(I,K,J)
                     SMR_URB(K) = SMR_URB3D(I,K,J)
-             	      TGRL_URB(K)= TGRL_URB3D(I,K,J)
+                           TGRL_URB(K)= TGRL_URB3D(I,K,J)
                   END DO
                   DO K = 1,num_wall_layers
                     TBL_URB(K) = TBL_URB3D(I,K,J)
@@ -5111,7 +5111,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
           IF ((mosaic_cat_index(I,1,J) .EQ. ISWATER)) THEN    
           
           ! xland < 1.5 but the dominant land use category based on our calculation is water
-	             
+                     
            IF (IVGTYP(i,j) .EQ. ISWATER) THEN  
            
            ! xland < 1.5 but the dominant land use category based on the geogrid calculation is water, this must be wrong
@@ -5128,15 +5128,15 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
            
            ! xland < 1.5,   the dominant land use category based on our calculation is water, but based on the geogrid calculation is not water, which might be due to the inconsistence between land use data and land-sea mask
            
-	       Temp4=LANDUSEF2(i,1,j)
-	       Temp5=mosaic_cat_index(i,1,j)
-	  
-	       LANDUSEF2(i,1:NLCAT-1,j)=LANDUSEF2(i,2:NLCAT,j)                       
-	       mosaic_cat_index(i,1:NLCAT-1,j)=mosaic_cat_index(i,2:NLCAT,j)
-	  
-	       LANDUSEF2(i,NLCAT,j)=Temp4
-	       mosaic_cat_index(i,NLCAT,j)=Temp5
-	             
+               Temp4=LANDUSEF2(i,1,j)
+               Temp5=mosaic_cat_index(i,1,j)
+          
+               LANDUSEF2(i,1:NLCAT-1,j)=LANDUSEF2(i,2:NLCAT,j)                       
+               mosaic_cat_index(i,1:NLCAT-1,j)=mosaic_cat_index(i,2:NLCAT,j)
+          
+               LANDUSEF2(i,NLCAT,j)=Temp4
+               mosaic_cat_index(i,NLCAT,j)=Temp5
+                     
               CALL wrf_message("IN MOSAIC_INIT")
               WRITE(message_text,fmt='(a,3I6,2F8.2)') 'I,J,IVGTYP,XLAND,XICE = ',I,J,IVGTYP(I,J),xland(i,j),xice(i,j) 
               CALL wrf_message(message_text)
@@ -5148,23 +5148,23 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
               CALL wrf_message(message_text)
               WRITE(message_text,fmt='(a,2I6)') 'new dominant and second dominant cat are ', mosaic_cat_index(i,1,j),mosaic_cat_index(i,2,j)
               CALL wrf_message(message_text)
-	             
+                     
            ENDIF  ! for (IVGTYP(i,j) .NE. ISWATER)
           
            ELSE    !  for (mosaic_cat_index(I,1,J) .EQ. ISWATER)
            
                      DO mosaic_i=2,mosaic_cat
-	                IF (mosaic_cat_index(i,mosaic_i,j) == iswater ) THEN
-	                   Temp4=LANDUSEF2(i,mosaic_i,j)
-	                   Temp5=mosaic_cat_index(i,mosaic_i,j)
-	   
-	                   LANDUSEF2(i,mosaic_i:NLCAT-1,j)=LANDUSEF2(i,mosaic_i+1:NLCAT,j)                       
-	                   mosaic_cat_index(i,mosaic_i:NLCAT-1,j)=mosaic_cat_index(i,mosaic_i+1:NLCAT,j)
-	  
-	                   LANDUSEF2(i,NLCAT,j)=Temp4
-	                   mosaic_cat_index(i,NLCAT,j)=Temp5
-	                ENDIF 
-	              ENDDO
+                        IF (mosaic_cat_index(i,mosaic_i,j) == iswater ) THEN
+                           Temp4=LANDUSEF2(i,mosaic_i,j)
+                           Temp5=mosaic_cat_index(i,mosaic_i,j)
+           
+                           LANDUSEF2(i,mosaic_i:NLCAT-1,j)=LANDUSEF2(i,mosaic_i+1:NLCAT,j)                       
+                           mosaic_cat_index(i,mosaic_i:NLCAT-1,j)=mosaic_cat_index(i,mosaic_i+1:NLCAT,j)
+          
+                           LANDUSEF2(i,NLCAT,j)=Temp4
+                           mosaic_cat_index(i,NLCAT,j)=Temp5
+                        ENDIF 
+                      ENDDO
              
            ENDIF !  for (mosaic_cat_index(I,1,J) .EQ. ISWATER)
              
@@ -5183,7 +5183,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
            IF ((mosaic_cat_index(I,1,J) .NE. ISWATER)) THEN    
                 
                 ! xland > 1.5 and the dominant land use category based on our calculation is not water
-      	             
+                           
                  IF (IVGTYP(i,j) .NE. ISWATER) THEN  
                  
                  ! xland > 1.5 but the dominant land use category based on the geogrid calculation is not water, this must be wrong
@@ -5207,7 +5207,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                  CALL wrf_message("This is fine. We do not need to do anyting because in the noaddrv, "//&
                       "we use xland as a criterion for whether using"// &
                       "mosaic or not when xland > 1.5, no mosaic will be used anyway")
-      	             
+                           
                  ENDIF  ! for (IVGTYP(i,j) .NE. ISWATER)
                 
            ENDIF !  for (mosaic_cat_index(I,1,J) .NE. ISWATER)

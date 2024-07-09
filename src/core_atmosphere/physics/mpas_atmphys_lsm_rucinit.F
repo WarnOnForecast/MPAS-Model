@@ -114,7 +114,7 @@
  real(kind=RKIND),parameter:: xlmelt=3.35E5
  real(kind=RKIND),parameter:: riw=900.E-3
 
-  character*8 :: MMINLURUC
+  character(len=8) :: MMINLURUC
 
 !-----------------------------------------------------------------------------------------------------------------
 
@@ -252,8 +252,8 @@ endif
  character(len=*),intent(inout):: mminluruc, mminsl
 
 !local variables:
- character*128:: mess , message
- character*256 :: a_string
+ character(len=128) :: mess , message
+ character(len=256) :: a_string
 
  integer,parameter:: open_ok = 0
  integer:: lumatch,iindex,lc,num_slope
