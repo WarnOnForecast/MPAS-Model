@@ -838,9 +838,6 @@
 
                 <var name="albedo12m" type="real" dimensions="nMonths nCells" units="unitless"
                      description="monthly-mean climatological surface albedo"/>
-                     
-                <var name="lai12m" type="real" dimensions="nMonths nCells" units="unitless"
-                     description="monthly-mean climatological leaf area index"/>
 
                 <var name="lai12m" type="real" dimensions="nMonths nCells" units="unitless"
                      description="monthly-mean climatological leaf area index"/>
