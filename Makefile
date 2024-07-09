@@ -789,30 +789,6 @@ else # Not using PIO, using SMIOL
 	FCINCLUDES += -I$(PWD)/src/external/SMIOL
 endif
 
-ifneq "$(NETCDF)" ""
-ifneq ($(wildcard $(NETCDF)/lib), )
-	NETCDFLIBLOC = lib
-endif
-ifneq ($(wildcard $(NETCDF)/lib64), )
-	NETCDFLIBLOC = lib64
-endif
-	CPPINCLUDES += -I$(NETCDF)/include
-	FCINCLUDES += -I$(NETCDF)/include
-	LIBS += -L$(NETCDF)/$(NETCDFLIBLOC)
-	NCLIB = -lnetcdf
-	NCLIBF = -lnetcdff
-	ifneq ($(wildcard $(NETCDF)/$(NETCDFLIBLOC)/libnetcdff.*), ) # CHECK FOR NETCDF4
-		LIBS += $(NCLIBF)
-	endif # CHECK FOR NETCDF4
-	ifneq "$(NETCDFF)" ""
-		FCINCLUDES += -I$(NETCDFF)/include
-		LIBS += -L$(NETCDFF)/$(NETCDFLIBLOC)
-		LIBS += $(NCLIBF)
-	endif
-	LIBS += $(NCLIB)
-endif
-
-
 ifneq "$(PNETCDF)" ""
 ifneq ($(wildcard $(PNETCDF)/lib), )
 	PNETCDFLIBLOC = lib
@@ -823,6 +799,29 @@ endif
 	CPPINCLUDES += -I$(PNETCDF)/include
 	FCINCLUDES += -I$(PNETCDF)/include
 	LIBS += -L$(PNETCDF)/$(PNETCDFLIBLOC) -lpnetcdf
+endif
+
+ifneq "$(NETCDF)" ""
+ifneq ($(wildcard $(NETCDF)/lib), )
+	NETCDFLIBLOC = lib
+endif
+ifneq ($(wildcard $(NETCDF)/lib64), )
+	NETCDFLIBLOC = lib64
+endif
+	CPPINCLUDES += -I$(NETCDF)/include
+	FCINCLUDES += -I$(NETCDF)/include
+	LIBS += -L$(NETCDF)/$(NETCDFLIBLOC)
+	NCLIB = -lnetcdf -lhdf5_hl -lhdf5 -lm -lz -ldl -lbz2 -lzstd -lcurl -lstdc++
+	NCLIBF = -lnetcdff
+	ifneq ($(wildcard $(NETCDF)/$(NETCDFLIBLOC)/libnetcdff.*), ) # CHECK FOR NETCDF4
+		LIBS += $(NCLIBF)
+	endif # CHECK FOR NETCDF4
+	ifneq "$(NETCDFF)" ""
+		FCINCLUDES += -I$(NETCDFF)/include
+		LIBS += -L$(NETCDFF)/$(NETCDFLIBLOC)
+		LIBS += $(NCLIBF)
+	endif
+	LIBS += $(NCLIB)
 endif
 
 ifneq "$(LAPACK)" ""

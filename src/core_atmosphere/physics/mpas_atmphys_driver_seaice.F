@@ -15,7 +15,7 @@
  use mpas_atmphys_vars
  use module_sf_noah_seaice_drv
  use module_sf_sfcdiags
- !RUC lsm ice module 
+ !RUC lsm ice module
  use module_ruc_ice
  use module_sf_sfcdiags_ruclsm
 
@@ -33,7 +33,7 @@
 !urban physics: MPAS does not plan to run the urban physics option.
  integer,parameter:: sf_urban_physics = 0 !activate urban canopy model (=0: no urban canopy)
 
- integer :: targetcell= 0 !99975 !81442 !107619
+ !integer :: targetcell= 0 !99975 !81442 !107619
 
 !MPAS driver for parameterization of surface processes over seaice points.
 !Laura D. Fowler (laura@ucar.edu) / 2024-03-13.
@@ -300,7 +300,7 @@
  call mpas_pool_get_array(diag_physics,'snopcx'           ,snopcx           )
  call mpas_pool_get_array(diag_physics,'z0'               ,z0               )
  call mpas_pool_get_array(diag_physics,'znt'              ,znt              )
- 
+
  call mpas_pool_get_array(sfc_input,'snoalb'  ,snoalb  )
  call mpas_pool_get_array(sfc_input,'snow'    ,snow    )
  call mpas_pool_get_array(sfc_input,'snowc'   ,snowc   )
@@ -415,11 +415,11 @@
        if (lsm_scheme == 'sf_ruc') then
            dew_p(i,j) = dew(i)
            sfcevp_p(i,j) = sfcevp(i)
-           if (globalcells(i)==targetcell) then
-              print *,'from MPAS '
-              print *,'globalcells(i),cqs_p,cqs2_p,chs_p,chs2_p',globalcells(i),cqs_p(i,j),cqs2_p(i,j),chs_p(i,j),chs2_p(i,j)
-              print *,'flqc(i),mavail(i),rho_p(i,kts,j)',flqc(i),mavail(i),rho_p(i,kts,j)
-           endif
+           !if (globalcells(i)==targetcell) then
+           !   print *,'from MPAS '
+           !   print *,'globalcells(i),cqs_p,cqs2_p,chs_p,chs2_p',globalcells(i),cqs_p(i,j),cqs2_p(i,j),chs_p(i,j),chs2_p(i,j)
+           !   print *,'flqc(i),mavail(i),rho_p(i,kts,j)',flqc(i),mavail(i),rho_p(i,kts,j)
+           !endif
        endif
 
        !modify the surface albedo and surface emissivity, and surface temperatures over sea-ice points:
@@ -579,14 +579,14 @@
                     )
     case("sf_ruc")
        call mpas_log_write('--- call subroutine sfcdiags_ruclsm:')
-       do j = jts,jte
-          do i = its,ite
-             if (globalcells(i)==targetcell) then
-                print *,' before call to sfcdiags_ruclsm'
-                print *,'globalcells(i),cqs_p,cqs2_p,chs_p,chs2_p',globalcells(i),cqs_p(i,j),cqs2_p(i,j),chs_p(i,j),chs2_p(i,j)
-             endif
-          enddo
-       enddo
+       !do j = jts,jte
+       !   do i = its,ite
+       !      if (globalcells(i)==targetcell) then
+       !         print *,' before call to sfcdiags_ruclsm'
+       !         print *,'globalcells(i),cqs_p,cqs2_p,chs_p,chs2_p',globalcells(i),cqs_p(i,j),cqs2_p(i,j),chs_p(i,j),chs2_p(i,j)
+       !      endif
+       !   enddo
+       !enddo
        call sfcdiags_ruclsm( &
                      hfx     = hfx_p  , qfx     = qfx_p   , tsk  = tsk_p       , qsfc = qsfc_p , chs = chs_p , &
                      chs2    = chs2_p , cqs2    = cqs2_p  , t2   = t2m_p       , th2  = th2m_p , q2  = q2_p  , &
@@ -682,7 +682,7 @@
 
  character(len=StrKIND),pointer:: mminlu
  integer,pointer:: isice,iswater
- integer,pointer:: spp_lsm_loc 
+ integer,pointer:: spp_lsm_loc
  integer,pointer:: globalCells(:)
 
 
