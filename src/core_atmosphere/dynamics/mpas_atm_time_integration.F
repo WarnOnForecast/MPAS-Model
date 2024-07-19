@@ -2968,6 +2968,9 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
       call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
+
+      call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingDel4) 
+
       call mpas_pool_get_array(tend, trim(field_name)//'_tend', scalar_tend_save)
       
       call mpas_pool_get_array(mesh, 'fzm', fnm)
@@ -2999,6 +3002,7 @@ module atm_time_integration
              coef_3rd_order, scalar_old, scalar_new, rho_zz_old, rho_zz_new, &
              uhAvg, wwAvg, dvEdge, &
              cellsOnEdge, edgesOnCell, nEdgesOnCell, edgesOnCell_sign, invAreaCell, &
+             invDcEdge, meshScalingDel4, &
              scalar_tend_save, fnm, fnp, rdnw, &
              bdyMaskCell, bdyMaskEdge, &
              nAdvCellsForEdge, advCellsForEdge, adv_coefs, adv_coefs_3rd, &
@@ -3043,11 +3047,12 @@ module atm_time_integration
              coef_3rd_order, scalar_old, scalar_new, rho_zz_old, rho_zz_new, &
              uhAvg, wwAvg, dvEdge, &
              cellsOnEdge, edgesOnCell, nEdgesOnCell, edgesOnCell_sign, invAreaCell, &
+              invDcEdge, meshScalingDel4, &
              scalar_tend_save, fnm, fnp, rdnw, &
              bdyMaskCell, bdyMaskEdge, &
              nAdvCellsForEdge, advCellsForEdge, adv_coefs, adv_coefs_3rd, &
              nEdges, horiz_flux_arr, rk_step, config_time_integration_order, &
-             advance_density, h_scalar_eddy_visc4))
+             advance_density, h_scalar_eddy_visc4)
 
 
       use mpas_atm_dimensions, only : nVertLevels
@@ -3081,7 +3086,7 @@ module atm_time_integration
       integer, dimension(:), intent(in) :: bdyMaskCell, bdyMaskEdge ! regional_MPAS addition
 
       real (kind=RKIND), intent(in) ::  h_scalar_eddy_visc4                              ! used for 4th order filter
-      real (kind=RKIND), dimension(:), intent(in) :: dvEdge, invDcEdge, meshScalingDel4  ! used for 4th order filter
+      real (kind=RKIND), dimension(:), intent(in) :: invDcEdge, meshScalingDel4  ! used for 4th order filter
 
       integer :: i, j, iCell, iAdvCell, iEdge, k, iScalar, cell1, cell2
       real (kind=RKIND) :: rho_zz_new_inv
@@ -3103,7 +3108,7 @@ module atm_time_integration
       real (kind=RKIND) :: u_direction, u_positive, u_negative
 
       real (kind=RKIND) ::  r_areaCell, edge_sign   ! used for 4th order filter
-      logical, parameter :: scalar_debug4 = .true.
+      logical, parameter :: scalar4_debug = .true.  ! used for 4th order filter - debugging
 
       flux4(q_im2, q_im1, q_i, q_ip1, ua) =                     &
           ua*( 7.*(q_i + q_im1) - (q_ip1 + q_im2) )/12.0
