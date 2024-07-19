@@ -5168,7 +5168,7 @@ module atm_time_integration
          if (h_theta_eddy_visc4 > 0.0) then  ! 4th order mixing is active
 
             do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-               r_areaCell = h_theta_eddy_visc4 * prandtl_inv * invAreaCell(iCell)
+               r_areaCell = h_theta_eddy_visc4 * invAreaCell(iCell)
                do i=1,nEdgesOnCell(iCell)
 
                   iEdge = edgesOnCell(i,iCell)
