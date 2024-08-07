@@ -3464,7 +3464,8 @@ module init_atm_cases
 
       do while (istatus == 0)
 
-         interp_list(1) = FOUR_POINT
+         ! interp_list(1) = FOUR_POINT
+         interp_list(1) = SIXTEEN_POINT
          interp_list(2) = SEARCH
          interp_list(3) = 0
 
@@ -5256,7 +5257,8 @@ call mpas_log_write('Done with soil consistency check')
 
       do while (istatus == 0)
 
-         interp_list(1) = FOUR_POINT
+         ! interp_list(1) = FOUR_POINT
+         interp_list(1) = SIXTEEN_POINT
          interp_list(2) = SEARCH
          interp_list(3) = 0
 
