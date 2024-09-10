@@ -119,6 +119,8 @@
  do j = jts,jte
     do i = its,ite
        dx_p(i,j)    = len_disp / meshDensity(i)**0.25
+       !conversion of dx_p from meters to kilometers.
+       dx_p(i,j)    = dx_p(i,j)*0.001
        xland_p(i,j) = xland(i)
     enddo
 

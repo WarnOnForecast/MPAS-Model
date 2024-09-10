@@ -123,7 +123,7 @@ module mpas_convective_diagnostics
         is_needed_snow_acc_nc = .false.
         do_any_uh = .false.
         do_any_diags = .false.
-        do_diag_dbz = .0
+        do_diag_dbz = 0
         if (mpas_stream_inclusion_count('refl10cm_1km_max', direction=MPAS_STREAM_OUTPUT) > 0) then
             do_diag_dbz = 1
         endif
@@ -363,7 +363,7 @@ module mpas_convective_diagnostics
         integer (kind=I8KIND) :: nsteps
         integer :: dt_tmp, diag_tmp
 
-        real (kind=RKIND), parameter :: uh_smooth = 0.25
+        real (kind=RKIND), parameter :: uh_smooth = 0.1
 
         ! - compute number of time steps between diag interval outputs
         call mpas_set_time(ref_time, dateTimeString='0000-01-01_00:00:00', ierr=ierr)
