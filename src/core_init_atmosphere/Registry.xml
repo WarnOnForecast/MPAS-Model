@@ -1,4 +1,3 @@
-
 <?xml version="1.0"?>
 <registry model="mpas" core="init_atmosphere" core_abbrev="init_atm" version="8.1.0">
 
@@ -207,7 +206,7 @@
                      description="Whether to use specific-humidity as the first-guess moisture variable. If this option is False, relative humidity will be used."
                      possible_values="true or false"/>
 
-		<nml_option name="config_lai_data"           type="character"     default_value="MODIS"
+        <nml_option name="config_lai_data"           type="character"     default_value="MODIS"
                      units="-"
                      description="The climatological monthly leaf area index dataset to use (case 7 only)"
                      possible_values="`MODIS'"/>
@@ -293,7 +292,7 @@
                      description="Whether to interpolate first-guess fields from intermediate file"
                      possible_values="true or false"/>
 
-		<nml_option name="config_aerosol_climo"            type="logical"       default_value="false"
+        <nml_option name="config_aerosol_climo"            type="logical"       default_value="false"
                      units="-"
                      description="Whether to use monthly climatology for water- and ice-friendly aerosols"
                      possible_values="true or false"/>
@@ -380,8 +379,8 @@
 <!-- *************************************** Streams **************************************** -->
 <!-- **************************************************************************************** -->
 
-	<streams>
-		<stream name="input"
+    <streams>
+        <stream name="input"
                         type="input"
                         filename_template="x1.40962.grid.nc"
                         input_interval="initial_only"
@@ -809,7 +808,7 @@
                 <var name="ivgtyp" name_in_code="lu_index" type="integer"  dimensions="nCells" units="unitless"
                      description="dominant vegetation category"/>
 
-		<var name="landusef" name_in_code="landusef" type="real"  dimensions="nlcat nCells" units="unitless"
+                <var name="landusef" name_in_code="landusef" type="real"  dimensions="nlcat nCells" units="unitless"
                      description="fraction of each landuse category present in each cell"/>
 
                 <var name="mminlu" type="text" dimensions="" units="unitless"
@@ -818,7 +817,7 @@
                 <var name="isltyp" name_in_code="soilcat_top"  type="integer"  dimensions="nCells" units="unitless"
                      description="dominate soil category"/>
 
-		<var name="soilf" name_in_code="soilf" type="real"  dimensions="nscat nCells" units="unitless"
+                <var name="soilf" name_in_code="soilf" type="real"  dimensions="nscat nCells" units="unitless"
                      description="fraction of each soil type present in each cell"/>
 
                 <var name="snoalb" type="real" dimensions="nCells" units="unitless"
@@ -1025,10 +1024,10 @@
                         <var name="qr" array_group="moist" units="kg kg^{-1}"
                              description="Rain water mixing ratio"/>
 
-			<var name="nwfa" array_group="passive" units="kg^{-1}"
+            <var name="nwfa" array_group="passive" units="kg^{-1}"
                              description="Number of water-friendly aerosols for microphysics"/>
 
-			<var name="nifa" array_group="passive" units="kg^{-1}"
+            <var name="nifa" array_group="passive" units="kg^{-1}"
                              description="Number of ice-friendly aerosols for microphysics"/>
 
                         <var name="qi" array_group="moist" units="kg kg^{-1}"
@@ -1057,6 +1056,15 @@
 
                         <var name="ng" array_group="number" units="nb kg^{-1}"
                              description="Graupel number concentration"/>
+
+                        <var name="nh" array_group="number" units="nb kg^{-1}"
+                             description="Hail number concentration"/>
+
+                        <var name="volg" array_group="volume" units="m^{3} kg^{-1}"
+                             description="Graupel particle volume"/>
+
+                        <var name="volh" array_group="volume" units="m^{3} kg^{-1}"
+                             description="Hail particle volume"/>
                 </var_array>
 
                 <!-- Climatology for ocean mixed-layer depth -->
@@ -1095,7 +1103,7 @@
                         <var name="lbc_nwfa" array_group="passive" units="kg^{-1}"
                              description="Number of water-friendly aerosols for microphysics on LBCs"/>
 
-			<var name="lbc_nifa" array_group="passive" units="kg^{-1}"
+            <var name="lbc_nifa" array_group="passive" units="kg^{-1}"
                              description="Number of ice-friendly aerosols for microphysics on LBCs"/>
 
                         <var name="lbc_qi" array_group="moist" units="kg kg^{-1}"
@@ -1171,11 +1179,11 @@
                      description="First guess specific humidity"
                      packages="first_guess_field"/>
 
-	        <var name="qnwfa_fg" name_in_code="qnwfa" type="real" dimensions="nFGLevels nCells Time" units="kg^{-1}"
-		     description="First guess water-friendly aerosols"/>
+            <var name="qnwfa_fg" name_in_code="qnwfa" type="real" dimensions="nFGLevels nCells Time" units="kg^{-1}"
+             description="First guess water-friendly aerosols"/>
 
-		<var name="qnifa_fg" name_in_code="qnifa" type="real" dimensions="nFGLevels nCells Time" units="kg^{-1}"
-		     description="First guess ice-friendly aerosols"/>
+        <var name="qnifa_fg" name_in_code="qnifa" type="real" dimensions="nFGLevels nCells Time" units="kg^{-1}"
+             description="First guess ice-friendly aerosols"/>
 
                 <var name="qc_fg" name_in_code="qc" type="real" dimensions="nFGLevels nCells Time" units="kg kg^{-1}"
                      description="First guess cloud mixing ratio"/>
