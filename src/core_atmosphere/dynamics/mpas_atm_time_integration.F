@@ -3206,7 +3206,7 @@ module atm_time_integration
 
                     do iScalar=1,num_scalars
 
-                      mono_diffusion_weight = max(0.0, sign(1.0, -1.*(scalar_new(iScalar,k,cell2) - scalar_new(iScalar,k,cell1))  &
+                      mono_diffusion_weight = max(0.0, sign(1.0, -1.0*(scalar_new(iScalar,k,cell2) - scalar_new(iScalar,k,cell1)) &
                                                                     *(scalar_old(iScalar,k,cell2) - scalar_old(iScalar,k,cell1)) ) )
                   
                       scalar_tend_save(iScalar,k,iCell) = scalar_tend_save(iScalar,k,iCell) & 
@@ -4752,15 +4752,16 @@ module atm_time_integration
 
             h_mom_eddy_visc4   = config_visc4_2dsmag * config_len_disp**3
             
-            !-------------------------------------------------------------------------------------------------------------------------
-            ! Added the ability to horizontally filter theta independently of config_visc4_2dsmag coeff for real data runs.
-            ! The code below maintains the original logic if config_h_theta_eddy_visc4 = 0 then h_theta_eddy_visc4 = h_mom_eddy_visc4
-            ! If config_h_theta_eddy_visc4 > 0, then h_theta_eddy_visc4 is set to have a value ~config_h_theta_eddy_visc4*L**3
-            !-------------------------------------------------------------------------------------------------------------------------
+            !-----------------------------------------------------------------------------------------------------------
+            ! Added the ability to horizontally filter theta independently of config_visc4_2dsmag coeff for 
+            ! real data runs.  The code below maintains the original MPASv8 logic if config_h_theta_eddy_visc4 = 0 then 
+            ! h_theta_eddy_visc4 = h_mom_eddy_visc4.  If config_h_theta_eddy_visc4 > 0, then h_theta_eddy_visc4
+            ! is set to have a value ~config_h_theta_eddy_visc4 * L**3
+            !-----------------------------------------------------------------------------------------------------------
 
-            if(config_h_theta_eddy_visc4 .lt. 0.000001) then
+            if(config_h_theta_eddy_visc4 .lt. 1.0e-4) then
 
-            h_theta_eddy_visc4 = h_mom_eddy_visc4
+                h_theta_eddy_visc4 = config_visc4_2dsmag * config_len_disp**3
 
             else
 
@@ -4982,9 +4983,6 @@ module atm_time_integration
                   end do
                end do
             end do
-
-
-
 
 !$OMP BARRIER
 
@@ -5209,9 +5207,7 @@ module atm_time_integration
 
             do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
 
-! test code LJW
-               r_areaCell = h_theta_eddy_visc4 * invAreaCell(iCell)
-!              r_areaCell = h_mom_eddy_visc4 * invAreaCell(iCell)
+               r_areaCell = h_mom_eddy_visc4 * invAreaCell(iCell)
 
                do i=1,nEdgesOnCell(iCell)
                   iEdge = edgesOnCell(i,iCell)
@@ -5219,7 +5215,6 @@ module atm_time_integration
                   cell2 = cellsOnEdge(2,iEdge)
 
                   edge_sign = meshScalingDel4(iEdge)*r_areaCell*dvEdge(iEdge)*edgesOnCell_sign(i,iCell) * invDcEdge(iEdge)
-
 
                   if( mono_diffu4 ) then
 
