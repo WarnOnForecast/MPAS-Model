@@ -213,7 +213,7 @@ MODULE module_mp_nssl_2mom
   integer  :: iusewetgraupel = 1 ! =1 to turn on use of QHW for graupel reflectivity (only for ZVDM -- mixedphase)
                                  ! =2 turn on for graupel density less than 300. only
   integer  :: iusewethail = 0 ! =1 to turn on use of QHW for graupel reflectivity (only for ZVDM -- mixedphase)
-  integer  :: iusewetsnow = 1 ! =1 to turn on diagnosed bright band; =2 'old' snow reflectivity (dry), =3 'old' snow dbz + brightband
+  integer  :: iusewetsnow = 0 ! =1 to turn on diagnosed bright band; =2 'old' snow reflectivity (dry), =3 'old' snow dbz + brightband
 ! microphysics
 
   real, private :: rho_qr = 1000., cnor = 8.0e5  ! cnor is set in namelist!!  rain params
@@ -232,7 +232,7 @@ MODULE module_mp_nssl_2mom
   real   , private :: qcmincwrn      = 2.0e-3    ! qc threshold for autonconversion (LFO; for 10ICE use qminrncw for ircnw != 5)
   real   , private :: cwdiap         = 20.0e-6   ! threshold diameter of cloud drops (Ferrier 1994 autoconversion)
   real   , private :: cwdisp         = 0.15      ! assume droplet dispersion parameter (can be 0.3 for maritime)
-  real   , private  :: ccn            = 0.6e+09   ! set in namelist!! Central plains CCN value
+  real   , private :: ccn            = 1.0e+09   ! set in namelist!! Central plains CCN value
   real   , public  :: qccn             ! ccn "mixing ratio"
   real   , private :: old_qccn = -1.0
   integer, private :: iauttim        = 1         ! 10-ice rain delay flag
@@ -269,8 +269,8 @@ MODULE module_mp_nssl_2mom
                           ! 4 -> Hybrid of 2 and 3: Uses minimum N from each method (z-wgt and m-wgt corrections) (Method I+II in Mansell, 2010 JAS)
                           ! 5 -> uses number-wgt for N and uses average of N-wgt and q-wgt instead of Max.
   real, private    :: rainfallfac = 1.0 ! factor to adjust rain fall speed (single moment only)
-  real, private    :: icefallfac = 1.0 ! factor to adjust ice fall speed
-  real, private    :: snowfallfac = 1.0 ! factor to adjust snow fall speed
+  real, private    :: icefallfac = 1.5 ! factor to adjust ice fall speed
+  real, private    :: snowfallfac = 1.25 ! factor to adjust snow fall speed
   real, private    :: graupelfallfac = 1.0 ! factor to adjust graupel fall speed
   real, private    :: hailfallfac = 1.0 ! factor to adjust hail fall speed
   integer, private :: icefallopt = 3 ! 1= default, 2 = Ferrier ice fall speed; 3 = adjusted Ferrier (slightly high Vt)
@@ -385,10 +385,10 @@ MODULE module_mp_nssl_2mom
   integer, private :: ierw = 1            ! for single-moment rain (LFO/Z)
   integer, private :: iehr0c = 0          ! 0 -> no collection for T > 0C;  1 -> turn on collection/shedding for T > 0C
   integer, private :: iehlr0c = 0         ! 0 -> no collection for T > 0C;  1 -> turn on collection/shedding for T > 0C
-  real   , private :: ehw0 = 0.5          ! constant or max assumed graupel-droplet collection efficiency
+  real   , private :: ehw0 = 0.9          ! constant or max assumed graupel-droplet collection efficiency
   real   , private :: erw0 = 1.0          ! constant assumed rain-droplet collection efficiency
-  real   , private :: ehlw0 = 0.75        ! constant or max assumed hail-droplet collection efficiency
-  real   , private :: efw0 = 0.5          ! constant or max assumed graupel-droplet collection efficiency
+  real   , private :: ehlw0 = 0.9         ! constant or max assumed hail-droplet collection efficiency
+  real   , private :: efw0 = 0.9          ! constant or max assumed graupel-droplet collection efficiency
   real    :: ehr0 = 1.0          ! constant or max assumed graupel-rain collection efficiency
   real    :: efr0 = 1.0          ! constant or max assumed graupel-rain collection efficiency
   real    :: ehlr0 = 1.0         ! constant or max assumed hail-rain collection efficiency
@@ -982,6 +982,7 @@ MODULE module_mp_nssl_2mom
                         idiagnosecnu,   &
                         icnuclimit,     &
                         irenuc,         &
+                        ccn,            &
                         restoreccn, ccntimeconst, cck, &
                         switchccn, old_cccn,  &
                         ciintmx,        &
